@@ -20,7 +20,7 @@ with open("config.json") as jFile:
     filePathofBot = data["FILE_PATH_BOT"]
 
 #get image links from file
-with open("imageLinks.txt") as imageFile:
+with open("reactionList.txt") as imageFile:
     reactList = [line.rstrip("\n") for line in imageFile]
     for i in range(len(reactList)):
         reactList[i] = reactList[i].split(" |")[0]
