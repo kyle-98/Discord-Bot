@@ -19,6 +19,12 @@ with open("config.json") as jFile:
     genWeatherApiKey = data["GENERAL_WEATHER_API_KEY"]
     filePathofBot = data["FILE_PATH_BOT"]
 
+#get image links from file
+with open("imageLinks.txt") as imageFile:
+    reactList = [line.rstrip("\n") for line in imageFile]
+    for i in range(len(reactList)):
+        reactList[i] = reactList[i].split(" |")[0]
+
 #################
 #   Functions   #
 #################
@@ -97,12 +103,11 @@ def getWeather(city):
     else:
         return(f"Error for {city} | Error code: {data['cod']} | Error Message: {data['message']}")
 
-bot = discord.Bot(debug_guilds=[guildID])
+bot = discord.Bot(debug_guilds=[guildID], intents=discord.Intents.all())
 
 #################
 #   Bot Events  #
 #################
-
 @bot.event
 async def on_ready():
     print(f'{bot.user} logged into the mainframe')
@@ -113,6 +118,63 @@ async def on_command_error(ctx, error):
     #if isinstance(error, commands.CommandOnCooldown):
     await ctx.send(f"{round(error.retry_after, 2)} seconds left")
 
+#####################
+#   Auto Reactions  #
+#####################
+@bot.event
+async def on_message(message):
+    msg = message.content
+    msgC = message.channel
+    if message.author == bot.user:
+        pass
+    if msg == "patrick":
+        await msgC.send(reactList[0])
+    if msg == "god":
+        await msgC.send(reactList[1])
+    if msg == "unit":
+        await msgC.send(reactList[2])
+    if msg == "legend":
+        await msgC.send(reactList[3])
+    if msg == "wot":
+        await msgC.send(reactList[4])
+    if msg == "hugo":
+        await msgC.send(reactList[5])
+    if msg == "snow":
+        await msgC.send(reactList[6])
+    if msg == "chungus":
+        await msgC.send(reactList[7])
+    if msg == "me":
+        await msgC.send(reactList[8])
+    if msg == "F":
+        await msgC.send(reactList[9])
+    if msg == "poggers":
+        await msgC.send(reactList[10])
+    if msg == "dallas":
+        await msgC.send(reactList[11])
+    if msg == "ibm":
+        await msgC.send(reactList[12])
+    if msg == "stooge":
+        await msgC.send(reactList[13])
+    if msg == "help":
+        await msgC.send(reactList[14])
+    if msg == "sinkies":
+        await msgC.send(reactList[15])
+    if msg == "chess":
+        await msgC.send(reactList[16])
+    if msg == "mercy":
+        await msgC.send(reactList[17])
+    if msg == "ma":
+        await msgC.send(reactList[18])
+    if msg == "who":
+        await msgC.send(reactList[19])
+    if msg == "hitreg":
+        await msgC.send(reactList[20])
+    if msg == "source code":
+        await msgC.send(reactList[21])
+    if msg == "pace22":
+        await msgC.send(reactList[22])
+    if msg == "burnt pizza":
+        await msgC.send(reactList[23])
 
 #####################
 #   Bot Commands    #
