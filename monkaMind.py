@@ -1,12 +1,17 @@
-from pydoc import describe
-import discord
-import random
-from discord.ext import commands
-from wand.image import Image
-import wand, wand.image
-import requests
 import json
+import random
+import re
 from datetime import datetime
+from pydoc import describe
+
+import discord
+import requests
+import wand
+import wand.image
+from discord.ext import commands
+from discord.ui import Button, View
+from paginator import NavigationType, Page, Paginator
+from wand.image import Image
 
 #get things from config
 with open("config.json") as jFile:
@@ -61,8 +66,8 @@ def getRoomTemp():
         feelsLikeInside = data[0]["feelsLikein"]
         degreeSymbol = u'\N{DEGREE SIGN}'
         return(f""" 
-                \nTemperature Inside: {tempInside}{degreeSymbol}
-                \nFeels Like Inside: {feelsLikeInside}{degreeSymbol}
+                Temperature Inside: {tempInside}{degreeSymbol}
+                Feels Like Inside: {feelsLikeInside}{degreeSymbol}
                 """)
     else:
         return(f"Error Code: {data['cod']} | Error Message: {data['message']}")
@@ -90,20 +95,22 @@ def getWeather(city):
         degreeSymbol = u'\N{DEGREE SIGN}'
 
         return(f"""
-                Temp: {temp}{degreeSymbol}\n
-                Feels Like: {feelsLikeTemp}{degreeSymbol}\n
-                Pressure: {pressure} hPa\n
-                Humidity: {humidity}%\n
-                Wind Speed: {windSpeed} mph\n
-                Cloud Cover: {clouds}%\n
-                Sunrise Time: {sunrise}\n
-                Sunset Time: {sunset}\n
+                Temp: {temp}{degreeSymbol}
+                Feels Like: {feelsLikeTemp}{degreeSymbol}
+                Pressure: {pressure} hPa
+                Humidity: {humidity}%
+                Wind Speed: {round(windSpeed, 2)} mph
+                Cloud Cover: {clouds}%
+                Sunrise Time: {sunrise}
+                Sunset Time: {sunset}
                 Information: {description}
                 """)
     else:
         return(f"Error for {city} | Error code: {data['cod']} | Error Message: {data['message']}")
 
+#Initialize Bot
 bot = discord.Bot(debug_guilds=[guildID], intents=discord.Intents.all())
+paginator = Paginator(bot)
 
 #################
 #   Bot Events  #
@@ -180,17 +187,20 @@ async def on_message(message):
 #   Bot Commands    #
 #####################
 
+#SOT Command
 @bot.command(description="sot of thieves")
 @commands.cooldown(1, 60, commands.BucketType.user)
 async def sot(ctx):
     await ctx.respond(sotResponse())
 
+#Magik Command
 @bot.command(description="magik and image")
 @commands.cooldown(1, 5, commands.BucketType.user)
 async def magik(ctx, message):
     editImage(message, imageMagik)
     await ctx.respond(file=discord.File("unknown.jpg"))
 
+#Room Temp Command
 @bot.command(description="Am I dying in fire rn?")
 @commands.cooldown(1, 15, commands.BucketType.user)
 async def roomtemp(ctx):
@@ -203,6 +213,7 @@ async def roomtemp(ctx):
     embed.set_image(url="attachment://roomTempImage.jpg")
     await ctx.respond(file=file, embed=embed)
 
+#Weather of any City Command
 @bot.command(description="Get weather of a city")
 @commands.cooldown(1, 15, commands.BucketType.user)
 async def weather(ctx, city):
@@ -213,4 +224,44 @@ async def weather(ctx, city):
     )
     await ctx.respond(embed=embed)
 
+#MW3 Server List Command
+@bot.command(descrption="MW3 Server List")
+async def mw3servers(ctx):
+    url = "https://plutonium.pw/api/servers"
+    response = requests.get(url)
+    data = response.json()
+
+    serverList = []
+    for d in data:
+        if d["game"] == "iw5mp" and len(d["players"]) >= 10:
+            sN = d['hostname']
+            playersList = []
+            newSN = re.sub('\^[0-9]{1}', '', sN)
+            for i in range(len(d['players'])):
+                playersList.append(d['players'][i]['username'])
+            server = []
+            server.append(newSN)
+            server.append(d['map'])
+            server.append(len(d['players']))
+            server.append(playersList)
+
+            serverList.append(server)
+
+    serverList = sorted(serverList, key=lambda x:x[2], reverse=True)
+    pages = []
+    nl = "\n"
+    for s in serverList:
+        namesList = list(s[3])
+        a = Page(embed=discord.Embed(
+            title = s[0],
+            description = f"""Map: {s[1]}
+            Player Count: {s[2]}
+            Players:\n
+            {nl.join(namesList)}
+            """
+        ))
+        pages.append(a)
+    await paginator.send(ctx.channel, pages, type=NavigationType.Buttons)
+
+#Start Bot With Token
 bot.run(token)
