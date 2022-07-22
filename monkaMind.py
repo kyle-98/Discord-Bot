@@ -2,7 +2,6 @@ import json
 import random
 import re
 from datetime import datetime
-from pydoc import describe
 
 import discord
 import requests
@@ -22,7 +21,7 @@ with open("config.json") as jFile:
     myWeatherMacAddress = data["MY_WEATHER_MAC_ADDRESS"]
     myWeatherAppKey = data["MY_WEATHER_APPLICATION_KEY"]
     genWeatherApiKey = data["GENERAL_WEATHER_API_KEY"]
-    filePathofBot = data["FILE_PATH_BOT"]
+    filePathofBot = data["FILE_PATH_BOT_MAC"]
 
 #get image links from file
 with open("reactionList.txt") as imageFile:
@@ -227,6 +226,7 @@ async def weather(ctx, city):
 #MW3 Server List Command
 @bot.command(descrption="MW3 Server List")
 async def mw3servers(ctx):
+    await ctx.defer()
     url = "https://plutonium.pw/api/servers"
     response = requests.get(url)
     data = response.json()
@@ -261,7 +261,82 @@ async def mw3servers(ctx):
             """
         ))
         pages.append(a)
+    await ctx.followup.send("📈")
     await paginator.send(ctx.channel, pages, type=NavigationType.Buttons)
+
+@bot.command(descrption="Displays Upcoming Rocket Launches")
+async def rocketlaunches(ctx):
+    await ctx.defer()
+    request = requests.get("https://ll.thespacedevs.com/2.2.0/launch/upcoming")
+    data = request.json()
+
+    launchesList = []
+
+    for d in data["results"]:
+        launchInfo = []
+
+        if d['name']:
+            name = d['name']
+        else:
+            name = "N/A"
+        if d['window_start'] and d['window_end']:
+            window_start = d['window_start']
+            window_end = d['window_end']
+        else:
+            window_start = "N/A"
+            window_end = "N/A"
+        if d['probability'] and d['probability'] != -1:
+            probability = str(d['probability']) + "%"
+        elif d['probability'] and d['probability'] == -1:
+            probability = "TBD"
+        else:
+            probability = "N/A"
+        if d['launch_service_provider']['name']:
+            provider = d['launch_service_provider']['name']
+        else:
+            provider = "N/A"
+        if d['rocket']['configuration']['full_name']:
+            full_name = d['rocket']['configuration']['full_name']
+        else:
+            full_name = "N/A"
+        if d['mission']:
+            mission_desc = d['mission']['description']
+        else:
+            mission_desc = "N/A"
+        if d['pad']['name'] and d['pad']['location']['name']:
+            pad_name = d['pad']['name']
+            pad_loc = d['pad']['location']['name']
+        else:
+            pad_name = "N/A"
+            pad_loc = "N/A"
+        launchInfo.append(name)
+        launchInfo.append(provider)
+        launchInfo.append(full_name)
+        launchInfo.append(probability)
+        launchInfo.append((window_start,window_end))
+        launchInfo.append((pad_name, pad_loc))
+        launchInfo.append(mission_desc)
+
+        launchesList.append(launchInfo)
+        
+    pages = []
+    for l in launchesList:
+        p = Page(embed=discord.Embed(
+            title = l[0],
+            description = f"""Provider: {l[1]}
+            Rocket: {l[2]}
+            Weather Conditions: {l[3]}
+            Launch Window: {l[4][0]} - {l[4][1]}
+            Pad: {l[5][0]} | {l[5][1]}
+
+            Mission: {l[6]}  
+            """
+        ))
+        pages.append(p)
+    await ctx.followup.send("📈")
+    await paginator.send(ctx.channel, pages, type=NavigationType.Buttons)
+
+
 
 #Start Bot With Token
 bot.run(token)
