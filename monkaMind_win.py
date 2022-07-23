@@ -10,6 +10,7 @@ import wand.image
 from discord.ext import commands
 from discord.ui import Button, View
 from discord import Embed
+from discord.commands import Option
 from paginator import Paginator, Page
 from wand.image import Image
 
@@ -120,11 +121,6 @@ async def on_ready():
     print(f'{bot.user} logged into the mainframe')
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.competing, name="the sea dogs arena"))
 
-@bot.event
-async def on_command_error(ctx, error):
-    #if isinstance(error, commands.CommandOnCooldown):
-    await ctx.send(f"{round(error.retry_after, 2)} seconds left")
-
 #####################
 #   Auto Reactions  #
 #####################
@@ -188,20 +184,32 @@ async def on_message(message):
 #####################
 
 #SOT Command
-@bot.command(description="sot of thieves")
+@bot.slash_command(description="sot of thieves")
 @commands.cooldown(1, 60, commands.BucketType.user)
 async def sot(ctx):
     await ctx.respond(sotResponse())
 
 #Magik Command
-@bot.command(description="magik and image")
+@bot.slash_command(description="magik and image")
 @commands.cooldown(1, 5, commands.BucketType.user)
-async def magik(ctx, message):
-    editImage(message, imageMagik)
-    await ctx.respond(file=discord.File("unknown.jpg"))
+async def magik(ctx, message: Option(str, "Enter a URL", required=False, default='')):
+    if message: 
+        editImage(message, imageMagik)
+        await ctx.respond(file=discord.File("unknown.jpg"))
+    else:
+        message = await ctx.channel.history(limit=1).flatten()
+        if message[0].attachments:
+            attach = message[0].attachments[0]
+            editImage(attach.url, imageMagik)
+            await ctx.respond(file=discord.File("unknown.jpg"))
+        elif message[0].content.startswith("https://cdn.discordapp.com/attachments/"):
+            editImage(message[0].content, imageMagik)
+            await ctx.respond(file=discord.File("unknown.jpg"))
+        else:
+            await ctx.respond("No Images Found")
 
 #Room Temp Command
-@bot.command(description="Am I dying in fire rn?")
+@bot.slash_command(description="Am I dying in fire rn?")
 @commands.cooldown(1, 15, commands.BucketType.user)
 async def roomtemp(ctx):
     embed = discord.Embed(
@@ -214,7 +222,7 @@ async def roomtemp(ctx):
     await ctx.respond(file=file, embed=embed)
 
 #Weather of any City Command
-@bot.command(description="Get weather of a city")
+@bot.slash_command(description="Get weather of a city")
 @commands.cooldown(1, 15, commands.BucketType.user)
 async def weather(ctx, city):
     embed = discord.Embed(
@@ -225,7 +233,7 @@ async def weather(ctx, city):
     await ctx.respond(embed=embed)
 
 #MW3 Server List Command
-@bot.command(descrption="MW3 Server List")
+@bot.slash_command(description="MW3 Server List")
 async def mw3servers(ctx):
     await ctx.defer()
     url = "https://plutonium.pw/api/servers"
@@ -264,7 +272,7 @@ async def mw3servers(ctx):
     await ctx.followup.send("📈")
     await paginator.send(ctx.channel, pages, type=2, author=ctx.author, disable_on_timeout=False)
 
-@bot.command(descrption="Displays Upcoming Rocket Launches")
+@bot.slash_command(description="Displays Upcoming Rocket Launches")
 async def rocketlaunches(ctx):
     await ctx.defer()
     request = requests.get("https://ll.thespacedevs.com/2.2.0/launch/upcoming")
@@ -309,6 +317,9 @@ async def rocketlaunches(ctx):
         else:
             pad_name = "N/A"
             pad_loc = "N/A"
+        map_image = d['pad']['map_image']
+        small_image = d['image']
+
         launchInfo.append(name)
         launchInfo.append(provider)
         launchInfo.append(full_name)
@@ -316,26 +327,37 @@ async def rocketlaunches(ctx):
         launchInfo.append((window_start,window_end))
         launchInfo.append((pad_name, pad_loc))
         launchInfo.append(mission_desc)
+        launchInfo.append(map_image)
+        launchInfo.append(small_image)
 
         launchesList.append(launchInfo)
         
     pages = []
     for l in launchesList:
-        p = Page(embed=discord.Embed(
+        e = discord.Embed(
             title = l[0],
             description = f"""Provider: {l[1]}
             Rocket: {l[2]}
             Weather Conditions: {l[3]}
             Launch Window: {l[4][0]} - {l[4][1]}
-            Pad: {l[5][0]} | {l[5][1]}
 
             Mission: {l[6]}  
-            """
-        ))
+            """,
+            color = 0xf36005
+        )
+        e.add_field(name=f"Pad: {l[5][0]} | {l[5][1]}", value="\u200B")
+        e.set_image(url=l[7])
+        e.set_thumbnail(url=l[8])
+        p = Page(embed=e)
         pages.append(p)
-    await ctx.followup.send("📈")
+    await ctx.followup.send("🚀")
     await paginator.send(ctx.channel, pages, type=2, author=ctx.author, disable_on_timeout=False)
 
+
+@bot.event
+async def on_application_command_error(ctx, error):
+    if isinstance(error, commands.CommandOnCooldown):
+        await ctx.respond(error)
 
 
 #Start Bot With Token
