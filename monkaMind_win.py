@@ -4,6 +4,7 @@ import re
 from datetime import datetime
 
 import discord
+import asyncio
 import requests
 import wand
 import wand.image
@@ -184,7 +185,7 @@ async def on_message(message):
 #####################
 
 #SOT Command
-@bot.slash_command(description="sot of thieves")
+@bot.command(description="sot of thieves")
 @commands.cooldown(1, 60, commands.BucketType.user)
 async def sot(ctx):
     await ctx.respond(sotResponse())
@@ -193,25 +194,31 @@ async def sot(ctx):
 @bot.slash_command(description="magik and image")
 @commands.cooldown(1, 5, commands.BucketType.user)
 async def magik(ctx, message: Option(str, "Enter a URL", required=False, default='')):
+    await ctx.defer()
+    await asyncio.sleep(5)
     if message: 
         editImage(message, imageMagik)
         await ctx.respond(file=discord.File("unknown.jpg"))
     else:
-        message = await ctx.channel.history(limit=1).flatten()
-        if message[0].attachments:
-            attach = message[0].attachments[0]
+        message = await ctx.channel.history(limit=2).flatten()
+        print(message)
+        if message[1].attachments:
+            attach = message[1].attachments[0]
             editImage(attach.url, imageMagik)
             await ctx.respond(file=discord.File("unknown.jpg"))
-        elif message[0].content.startswith("https://cdn.discordapp.com/attachments/"):
-            editImage(message[0].content, imageMagik)
+        elif message[1].content.startswith("https://"):
+            editImage(message[1].content, imageMagik)
             await ctx.respond(file=discord.File("unknown.jpg"))
         else:
             await ctx.respond("No Images Found")
+    
 
 #Room Temp Command
 @bot.slash_command(description="Am I dying in fire rn?")
 @commands.cooldown(1, 15, commands.BucketType.user)
 async def roomtemp(ctx):
+    await ctx.defer()
+    await asyncio.sleep(3)
     embed = discord.Embed(
        title = f"Temp Inside Sadge",
        description = getRoomTemp(),
@@ -225,6 +232,8 @@ async def roomtemp(ctx):
 @bot.slash_command(description="Get weather of a city")
 @commands.cooldown(1, 15, commands.BucketType.user)
 async def weather(ctx, city):
+    await ctx.defer()
+    await asyncio.sleep(4)
     embed = discord.Embed(
         title = f"Weather for {city}",
         description = getWeather(city),
@@ -236,6 +245,7 @@ async def weather(ctx, city):
 @bot.slash_command(description="MW3 Server List")
 async def mw3servers(ctx):
     await ctx.defer()
+    await asyncio.sleep(5)
     url = "https://plutonium.pw/api/servers"
     response = requests.get(url)
     data = response.json()
@@ -275,6 +285,7 @@ async def mw3servers(ctx):
 @bot.slash_command(description="Displays Upcoming Rocket Launches")
 async def rocketlaunches(ctx):
     await ctx.defer()
+    await asyncio.sleep(5)
     request = requests.get("https://ll.thespacedevs.com/2.2.0/launch/upcoming")
     data = request.json()
 
