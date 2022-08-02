@@ -1,4 +1,2 @@
 # Discord Bot
-:chatting:
-
-
+![](https://github.com/kyle-98/Discord-Bot/blob/main/chatting.gif)
