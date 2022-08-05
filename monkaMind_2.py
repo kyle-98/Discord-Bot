@@ -368,6 +368,8 @@ async def rocketlaunches(ctx):
 @bot.slash_command(description="Is it clock in time?")
 @commands.cooldown(1, 5, commands.BucketType.user)
 async def clockin(ctx):
+    TODAYS_DATE = str(datetime.today())[0:10]
+
     def writeToJson(newData, filename, userID):
         with open(filename, "r+") as file:
             c = 0
@@ -385,23 +387,37 @@ async def clockin(ctx):
         with open(filename) as file:
             data = json.load(file)
         for d in data["clockInList"]:
-            if d["userID"] == userID:
+            if d["userID"] == userID and d["lastTimeClocked"] != TODAYS_DATE:
                 d["timesClockedIn"] += 1
+                d["lastTimeClocked"] = TODAYS_DATE
         file.close()
         with open(filename, "w") as file:
             json.dump(data, file, indent=4)
         file.close()
 
+    def hasClocked(filename, userID):
+        with open(filename) as file:
+            data = json.load(file)
+            for d in data["clockInList"]:
+                if d["userID"] == userID and d["lastTimeClocked"] == TODAYS_DATE:
+                    return True
+                else:
+                    return False
+
     user = {
         "userID":ctx.author.id,
-        "timesClockedIn":0
+        "timesClockedIn":0,
+        "lastTimeClocked":TODAYS_DATE
     }
     writeToJson(user, os.getcwd()+"\\clockIn.json", ctx.author.id)
     timeNow = datetime.now().strftime("%H:%M:%S")
     hourNow = datetime.now().strftime("%H")
-    if hourNow == "01" or hourNow == "1":
-        increment(os.getcwd()+"\\clockIn.json", ctx.author.id)
-        await ctx.respond("You have been clocked in.")
+    if hourNow == "20" or hourNow == "1":
+        if hasClocked(os.getcwd()+"\\clockIn.json", ctx.author.id):
+            await ctx.respond("You have already clocked in for the day.")
+        else:
+            increment(os.getcwd()+"\\clockIn.json", ctx.author.id)
+            await ctx.respond("You have been clocked in.")
     else:
         await ctx.respond(f"Sorry clock in time is at 1 am, good hands time.  Right now the time is: {timeNow}")
 
