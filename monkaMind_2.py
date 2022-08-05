@@ -412,7 +412,7 @@ async def clockin(ctx):
     writeToJson(user, os.getcwd()+"\\clockIn.json", ctx.author.id)
     timeNow = datetime.now().strftime("%H:%M:%S")
     hourNow = datetime.now().strftime("%H")
-    if hourNow == "20" or hourNow == "1":
+    if hourNow == "01":
         if hasClocked(os.getcwd()+"\\clockIn.json", ctx.author.id):
             await ctx.respond("You have already clocked in for the day.")
         else:
