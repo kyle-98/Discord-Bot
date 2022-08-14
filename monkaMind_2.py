@@ -1,4 +1,5 @@
 import json
+from pydoc import describe
 import random
 import os
 import re
@@ -382,6 +383,7 @@ async def clockin(ctx):
                 fileData["clockInList"].append(newData)
                 file.seek(0)
                 json.dump(fileData, file, indent=4)
+        file.close()
 
     def increment(filename, userID):
         with open(filename) as file:
@@ -454,15 +456,35 @@ async def clockinleaderboard(ctx):
     await ctx.followup.send("📈")
     await ctx.send(embed=embed)
 
+#Set clockin time for person
+@bot.slash_command(descrition="Set a user's times clocked in")
+@commands.is_owner()
+async def setclockin(ctx, user_id, times):
+    await ctx.defer(ephemeral=True)
+    await asyncio.sleep(1)
+    filename = os.getcwd()+"\\clockIn.json"
+    user_id = int(user_id)
+    times = int(times)
+
+    with open(filename) as file:
+        data = json.load(file)
+    for d in data["clockInList"]:
+        if d["userID"] == user_id:
+            d["timesClockedIn"] = times
+    file.close()
+
+    with open(filename, "w") as file:
+        json.dump(data, file, indent=4)
+    file.close()
+
+    await ctx.followup.send(f"Set {str(bot.get_user(user_id))} to {times} times clocked in.")
+
 
 #Display error to user
 @bot.event
 async def on_application_command_error(ctx, error):
-    if isinstance(error, commands.CommandOnCooldown):
-        await ctx.defer(ephemeral=True)
-        await ctx.followup.send(error)
-
-
+    await ctx.defer(ephemeral=True)
+    await ctx.followup.send(error)
 
 
 #Start Bot With Token
