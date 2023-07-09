@@ -396,7 +396,7 @@ async def clockinleaderboard(ctx):
         textList = []
         c = 1
         for n in nL:
-            tempStr = f"Position {c}: {n[0][:-5]} | {n[1]} clock-in's"
+            tempStr = f"Position {c}: {n[0][:-2]} | {n[1]} clock-in's"
             textList.append(tempStr)
             c += 1
         str = '\n'.join(textList)
