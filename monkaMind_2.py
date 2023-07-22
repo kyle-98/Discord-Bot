@@ -26,6 +26,7 @@ with open("config.json") as jFile:
     myWeatherMacAddress = data["MY_WEATHER_MAC_ADDRESS"]
     myWeatherAppKey = data["MY_WEATHER_APPLICATION_KEY"]
     genWeatherApiKey = data["GENERAL_WEATHER_API_KEY"]
+    pin_channel_id = data["PIN_CHANNEL_ID"]
 
 #get image links from file
 with open('reactionList.txt', 'r') as imageFile:
@@ -434,7 +435,38 @@ async def setclockin(ctx, user_id, times):
 
     await ctx.followup.send(f"Set {str(bot.get_user(user_id))} to {times} times clocked in.")
 
+#pin a message in a channel to bypass 50 pin limit
+@bot.slash_command(description="Pin a message in the pins channel")
+@commands.cooldown(1, 5, commands.BucketType.user)
+async def pin(ctx, msg_id):
+    msg = await ctx.fetch_message(msg_id)
+    response_embed = discord.Embed(
+        url=msg.jump_url,
+        title=f"Message By {str(msg.author)[:-2]}",
+        description=(f"{msg.content}"),
+        timestamp=msg.created_at  
+    )
 
+    if(len(msg.attachments) > 0):
+        attach_embeds = []
+        res_embed = discord.Embed(
+            url=msg.jump_url,
+            title=f"Message by: {str(msg.author)[:-2]}",
+            description=f"{msg.content}",
+            timestamp=msg.created_at
+        )
+        attach_embeds.append(res_embed)
+        for i in range(0, len(msg.attachments)):
+            res = discord.Embed(
+            url=msg.jump_url
+            )
+            res.set_image(url=msg.attachments[i])
+            attach_embeds.append(res)
+        await bot.get_channel(pin_channel_id).send(embeds=attach_embeds)
+    else:
+        await bot.get_channel(pin_channel_id).send(embed=response_embed)
+    await ctx.send("message pinned")
+    
 #Display error to user
 @bot.event
 async def on_application_command_error(ctx, error):
