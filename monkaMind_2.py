@@ -452,9 +452,21 @@ async def pin(ctx, msg_id):
             await bot.get_channel(pin_channel_id).send(f"**__Message by: {str(msg.author)[:-2]}__**\n{msg.jump_url}\n**File Name: *{msg.attachments[0].url.split('/')[-1]}***\n{msg.attachments[0].url}")
         elif(msg.attachments[0].content_type.startswith("application")):
             if(msg.content == ""):
-                await bot.get_channel(pin_channel_id).send(f"**__Message by: {str(msg.author)[:-2]}__**\n{msg.jump_url}\n**File Name: *{msg.attachments[0].url.split('/')[-1]}***\n{msg.attachments[0].url}")
+                embed = discord.Embed(
+                    url=msg.jump_url,
+                    title=f"Message by: {str(msg.author)[:-2]}",
+                    description=f"Filename: {msg.attachments[0].url.split('/')[-1]}\n\n[Download Link]({msg.attachments[0].url})",
+                    timestamp=msg.created_at
+                )
+                await bot.get_channel(pin_channel_id).send(embed=embed)
             else:
-                await bot.get_channel(pin_channel_id).send(f"**__Message by: {str(msg.author)[:-2]}__**\n{msg.jump_url}\n__Message:__ {msg.content}\n**File Name: *{msg.attachments[0].url.split('/')[-1]}***\n{msg.attachments[0].url}")
+                embed = discord.Embed(
+                    url=msg.jump_url,
+                    title=f"Message by: {str(msg.author)[:-2]}",
+                    description=f"__Message:__ {msg.content}\n\n__Filename:__ {msg.attachments[0].url.split('/')[-1]}\n\n[Download Link]({msg.attachments[0].url})",
+                    timestamp=msg.created_at
+                )
+                await bot.get_channel(pin_channel_id).send(embed=embed)
         elif(msg.attachments[0].content_type.startswith("video")):
             await bot.get_channel(pin_channel_id).send(f"**__Message by: {str(msg.author)[:-2]}__**\n{msg.jump_url}\n{msg.attachments[0]}")
         else:
@@ -493,9 +505,21 @@ async def pin_message(ctx, message: discord.Message):
             await bot.get_channel(pin_channel_id).send(f"**__Message by: {str(msg.author)[:-2]}__**\n{msg.jump_url}\n**File Name: *{msg.attachments[0].url.split('/')[-1]}***\n{msg.attachments[0].url}")
         elif(msg.attachments[0].content_type.startswith("application")):
             if(msg.content == ""):
-                await bot.get_channel(pin_channel_id).send(f"**__Message by: {str(msg.author)[:-2]}__**\n{msg.jump_url}\n**File Name: *{msg.attachments[0].url.split('/')[-1]}***\n{msg.attachments[0].url}")
+                embed = discord.Embed(
+                    url=msg.jump_url,
+                    title=f"Message by: {str(msg.author)[:-2]}",
+                    description=f"Filename: {msg.attachments[0].url.split('/')[-1]}\n\n[Download Link]({msg.attachments[0].url})",
+                    timestamp=msg.created_at
+                )
+                await bot.get_channel(pin_channel_id).send(embed=embed)
             else:
-                await bot.get_channel(pin_channel_id).send(f"**__Message by: {str(msg.author)[:-2]}__**\n{msg.jump_url}\n__Message:__ {msg.content}\n**File Name: *{msg.attachments[0].url.split('/')[-1]}***\n{msg.attachments[0].url}")
+                embed = discord.Embed(
+                    url=msg.jump_url,
+                    title=f"Message by: {str(msg.author)[:-2]}",
+                    description=f"__Message:__ {msg.content}\n\n__Filename:__ {msg.attachments[0].url.split('/')[-1]}\n\n[Download Link]({msg.attachments[0].url})",
+                    timestamp=msg.created_at
+                )
+                await bot.get_channel(pin_channel_id).send(embed=embed)
         elif(msg.attachments[0].content_type.startswith("video")):
             await bot.get_channel(pin_channel_id).send(f"**__Message by: {str(msg.author)[:-2]}__**\n{msg.jump_url}\n{msg.attachments[0]}")
         else:
