@@ -448,21 +448,26 @@ async def pin(ctx, msg_id):
     )
 
     if(len(msg.attachments) > 0):
-        attach_embeds = []
-        res_embed = discord.Embed(
-            url=msg.jump_url,
-            title=f"Message by: {str(msg.author)[:-2]}",
-            description=f"{msg.content}",
-            timestamp=msg.created_at
-        )
-        attach_embeds.append(res_embed)
-        for i in range(0, len(msg.attachments)):
-            res = discord.Embed(
-            url=msg.jump_url
+        if(msg.attachments[0].content_type == None):
+            await bot.get_channel(pin_channel_id).send(f"**__Message by: {str(msg.author)[:-2]}__**\n{msg.jump_url}\n**File Name: *{msg.attachments[0].url.split('/')[-1]}***\n{msg.attachments[0].url}")
+        elif(msg.attachments[0].content_type.startswith("video")):
+            await bot.get_channel(pin_channel_id).send(f"**__Message by: {str(msg.author)[:-2]}__**\n{msg.jump_url}\n{msg.attachments[0]}")
+        else:
+            attach_embeds = []
+            res_embed = discord.Embed(
+                url=msg.jump_url,
+                title=f"Message by: {str(msg.author)[:-2]}",
+                description=f"{msg.content}",
+                timestamp=msg.created_at
             )
-            res.set_image(url=msg.attachments[i])
-            attach_embeds.append(res)
-        await bot.get_channel(pin_channel_id).send(embeds=attach_embeds)
+            attach_embeds.append(res_embed)
+            for i in range(0, len(msg.attachments)):
+                res = discord.Embed(
+                url=msg.jump_url
+                )
+                res.set_image(url=msg.attachments[i])
+                attach_embeds.append(res)
+            await bot.get_channel(pin_channel_id).send(embeds=attach_embeds)
     else:
         await bot.get_channel(pin_channel_id).send(embed=response_embed)
     await ctx.send("message pinned")
@@ -479,21 +484,26 @@ async def pin_message(ctx, message: discord.Message):
     )
 
     if(len(msg.attachments) > 0):
-        attach_embeds = []
-        res_embed = discord.Embed(
-            url=msg.jump_url,
-            title=f"Message by: {str(msg.author)[:-2]}",
-            description=f"{msg.content}",
-            timestamp=msg.created_at
-        )
-        attach_embeds.append(res_embed)
-        for i in range(0, len(msg.attachments)):
-            res = discord.Embed(
-            url=msg.jump_url
+        if(msg.attachments[0].content_type == None):
+            await bot.get_channel(pin_channel_id).send(f"**__Message by: {str(msg.author)[:-2]}__**\n{msg.jump_url}\n**File Name: *{msg.attachments[0].url.split('/')[-1]}***\n{msg.attachments[0].url}")
+        elif(msg.attachments[0].content_type.startswith("video")):
+            await bot.get_channel(pin_channel_id).send(f"**__Message by: {str(msg.author)[:-2]}__**\n{msg.jump_url}\n{msg.attachments[0]}")
+        else:
+            attach_embeds = []
+            res_embed = discord.Embed(
+                url=msg.jump_url,
+                title=f"Message by: {str(msg.author)[:-2]}",
+                description=f"{msg.content}",
+                timestamp=msg.created_at
             )
-            res.set_image(url=msg.attachments[i])
-            attach_embeds.append(res)
-        await bot.get_channel(pin_channel_id).send(embeds=attach_embeds)
+            attach_embeds.append(res_embed)
+            for i in range(0, len(msg.attachments)):
+                res = discord.Embed(
+                url=msg.jump_url
+                )
+                res.set_image(url=msg.attachments[i])
+                attach_embeds.append(res)
+            await bot.get_channel(pin_channel_id).send(embeds=attach_embeds)
     else:
         await bot.get_channel(pin_channel_id).send(embed=response_embed)
     await ctx.send("message pinned")
