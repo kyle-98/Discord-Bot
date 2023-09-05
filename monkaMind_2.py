@@ -541,7 +541,105 @@ async def pin_message(ctx, message: discord.Message):
     else:
         await bot.get_channel(pin_channel_id).send(embed=response_embed)
     await ctx.send("message pinned")
-    
+
+
+#Selection menu for CPC outlooks
+class CPCOutlookView(discord.ui.View):
+    @discord.ui.select(
+        placeholder = 'Choose an option',
+        min_values = 1,
+        max_values = 1,
+        options = [
+            discord.SelectOption(
+                label="6 to 10 Day Outlook",
+                description="Get CPC 6-10 Day Outlook Maps"
+            ),
+            discord.SelectOption(
+                label="8 to 14 Day Outlook",
+                description="Get CPC 8-14 Day Outlook Maps"
+            )
+        ]
+    )
+    async def select_callback(self, select, interaction):
+        if select.values[0] == "6 to 10 Day Outlook":
+            temp_outlook_embed = discord.Embed(
+                url="https://www.cpc.ncep.noaa.gov/products/predictions/610day/",
+                title=f"6 to 10 Day Outlook",
+                description="6 to 10 Day Outlook from the Climate Prediction Center",
+                color=0x3498db
+            )
+            temp_outlook_embed.set_image(url="https://www.cpc.ncep.noaa.gov/products/predictions/610day/610temp.new.gif")
+
+            precip_outlook_embed = discord.Embed(
+                url="https://www.cpc.ncep.noaa.gov/products/predictions/610day/"
+            )
+            precip_outlook_embed.set_image(url="https://www.cpc.ncep.noaa.gov/products/predictions/610day/610prcp.new.gif")
+            await interaction.response.send_message(embeds=[temp_outlook_embed, precip_outlook_embed])
+
+        elif select.values[0] == "8 to 14 Day Outlook":
+            temp_outlook_embed = discord.Embed(
+                url="https://www.cpc.ncep.noaa.gov/products/predictions/814day/",
+                title=f"8 to 14 Day Outlook",
+                description="8 to 14 Day Outlook from the Climate Prediction Center",
+                color=0x3498db
+            )
+            temp_outlook_embed.set_image(url="https://www.cpc.ncep.noaa.gov/products/predictions/814day/814temp.new.gif")
+
+            precip_outlook_embed = discord.Embed(
+                url="https://www.cpc.ncep.noaa.gov/products/predictions/814day/"
+            )
+            precip_outlook_embed.set_image(url="https://www.cpc.ncep.noaa.gov/products/predictions/814day/814prcp.new.gif")
+            await interaction.response.send_message(embeds=[temp_outlook_embed, precip_outlook_embed])
+
+#Send selection prompt for CPC outlooks
+@bot.slash_command(description="Get CPC Outlook Maps")
+@commands.cooldown(1, 5, commands.BucketType.user)
+async def cpcoutlook(ctx):
+    await ctx.respond("Choose an option", view=CPCOutlookView())
+
+#Create a view for select dropdown options
+class TropicalView(discord.ui.View):
+    @discord.ui.select(
+        placeholder = 'Choose an option',
+        min_values = 1,
+        max_values = 1,
+        options = [
+            discord.SelectOption(
+                label="2-Day Graphical Outlook",
+                description="Two-day outlook for tropical weather (AL)"
+            ),
+            discord.SelectOption(
+                label="7-Day Graphical Outlook",
+                description="Seven-day outlook for tropical weather (AL)"
+            )
+        ]
+    )
+    async def select_callback(self, select, interaction):
+        if(select.values[0] == "2-Day Graphical Outlook"):
+            embed = discord.Embed(
+                url="https://www.nhc.noaa.gov/gtwo.php?basin=atlc&fdays=2",
+                title="Atlantic 2-Day Graphical Tropical Weather Outlook"
+            )
+            unique_query_param = f'?random={random.randint(1, 1000)}'
+            embed.set_image(url=f"https://www.nhc.noaa.gov/xgtwo/two_atl_2d0.png{unique_query_param}")
+            await interaction.response.send_message(embed=embed)
+
+        elif(select.values[0] == "7-Day Graphical Outlook"):
+            embed = discord.Embed(
+                url="https://www.nhc.noaa.gov/gtwo.php?basin=atlc&fdays=7",
+                title="Atlantic 7-Day Graphical Tropical Weather Outlook"
+            )
+            unique_query_param = f'?random={random.randint(1, 1000)}'
+            embed.set_image(url=f"https://www.nhc.noaa.gov/xgtwo/two_atl_7d0.png{unique_query_param}")
+            await interaction.response.send_message(embed=embed)
+            
+#Send TropicalView selection to the user
+@bot.slash_command(description="Get NHC Tropical Outlook Maps")
+@commands.cooldown(1, 5, commands.BucketType.user)
+async def tropicaloutlook(ctx):
+    await ctx.respond("Choose an option", view=TropicalView())
+
+
 #Display error to user
 @bot.event
 async def on_application_command_error(ctx, error):
