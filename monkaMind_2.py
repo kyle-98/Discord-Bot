@@ -569,12 +569,14 @@ class CPCOutlookView(discord.ui.View):
                 description="6 to 10 Day Outlook from the Climate Prediction Center",
                 color=0x3498db
             )
-            temp_outlook_embed.set_image(url="https://www.cpc.ncep.noaa.gov/products/predictions/610day/610temp.new.gif")
+            unique_query_param = f'?random={random.randint(1, 1000)}'
+            temp_outlook_embed.set_image(url=f"https://www.cpc.ncep.noaa.gov/products/predictions/610day/610temp.new.gif{unique_query_param}")
 
             precip_outlook_embed = discord.Embed(
                 url="https://www.cpc.ncep.noaa.gov/products/predictions/610day/"
             )
-            precip_outlook_embed.set_image(url="https://www.cpc.ncep.noaa.gov/products/predictions/610day/610prcp.new.gif")
+            unique_query_param = f'?random={random.randint(1, 1000)}'
+            precip_outlook_embed.set_image(url=f"https://www.cpc.ncep.noaa.gov/products/predictions/610day/610prcp.new.gif{unique_query_param}")
             await interaction.response.send_message(embeds=[temp_outlook_embed, precip_outlook_embed])
 
         elif select.values[0] == "8 to 14 Day Outlook":
@@ -584,12 +586,14 @@ class CPCOutlookView(discord.ui.View):
                 description="8 to 14 Day Outlook from the Climate Prediction Center",
                 color=0x3498db
             )
-            temp_outlook_embed.set_image(url="https://www.cpc.ncep.noaa.gov/products/predictions/814day/814temp.new.gif")
+            unique_query_param = f'?random={random.randint(1, 1000)}'
+            temp_outlook_embed.set_image(url=f"https://www.cpc.ncep.noaa.gov/products/predictions/814day/814temp.new.gif{unique_query_param}")
 
             precip_outlook_embed = discord.Embed(
                 url="https://www.cpc.ncep.noaa.gov/products/predictions/814day/"
             )
-            precip_outlook_embed.set_image(url="https://www.cpc.ncep.noaa.gov/products/predictions/814day/814prcp.new.gif")
+            unique_query_param = f'?random={random.randint(1, 1000)}'
+            precip_outlook_embed.set_image(url=f"https://www.cpc.ncep.noaa.gov/products/predictions/814day/814prcp.new.gif{unique_query_param}")
             await interaction.response.send_message(embeds=[temp_outlook_embed, precip_outlook_embed])
 
 #Send selection prompt for CPC outlooks
