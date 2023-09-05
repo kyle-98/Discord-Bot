@@ -4,6 +4,7 @@ import random
 import os
 import re
 from datetime import datetime
+import random
 
 import discord
 import asyncio
