@@ -5,6 +5,10 @@ import os
 import re
 from datetime import datetime
 import random
+from tropycal import utils, realtime
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
+import matplotlib.pyplot as plt
 
 import discord
 import asyncio
@@ -115,7 +119,8 @@ def getWeather(city):
         return(f"Error for {city} | Error code: {data['cod']} | Error Message: {data['message']}")
 
 #Initialize Bot
-bot = discord.Bot(debug_guilds=[guildID], intents=discord.Intents.all())
+#debug_guilds=[guildID],
+bot = discord.Bot(intents=discord.Intents.all())
 paginator = Paginator(bot)
 
 #################
@@ -459,6 +464,7 @@ async def pin(ctx, msg_id):
                     description=f"Filename: {msg.attachments[0].url.split('/')[-1]}\n\n[Download Link]({msg.attachments[0].url})",
                     timestamp=msg.created_at
                 )
+                #await bot.get_channel(pin_channel_id).send(f"**__Message by: {str(msg.author)[:-2]}__**\n{msg.jump_url}\n**File Name: *{msg.attachments[0].url.split('/')[-1]}***\n{msg.attachments[0].url}")
                 await bot.get_channel(pin_channel_id).send(embed=embed)
             else:
                 embed = discord.Embed(
@@ -468,6 +474,7 @@ async def pin(ctx, msg_id):
                     timestamp=msg.created_at
                 )
                 await bot.get_channel(pin_channel_id).send(embed=embed)
+                #await bot.get_channel(pin_channel_id).send(f"**__Message by: {str(msg.author)[:-2]}__**\n{msg.jump_url}\n__Message:__ {msg.content}\n**File Name: *{msg.attachments[0].url.split('/')[-1]}***\n{msg.attachments[0].url}")  
         elif(msg.attachments[0].content_type.startswith("video")):
             await bot.get_channel(pin_channel_id).send(f"**__Message by: {str(msg.author)[:-2]}__**\n{msg.jump_url}\n{msg.attachments[0]}")
         else:
@@ -488,7 +495,7 @@ async def pin(ctx, msg_id):
             await bot.get_channel(pin_channel_id).send(embeds=attach_embeds)
     else:
         await bot.get_channel(pin_channel_id).send(embed=response_embed)
-    await ctx.send("message pinned")
+    await ctx.respond(f"Message: [Jump to message]({msg.jump_url})\n**Pinned by {str(ctx.author)[:-2]}**")
 
 #Context menu pin option
 @bot.message_command(name="Pin Message")
@@ -541,8 +548,7 @@ async def pin_message(ctx, message: discord.Message):
             await bot.get_channel(pin_channel_id).send(embeds=attach_embeds)
     else:
         await bot.get_channel(pin_channel_id).send(embed=response_embed)
-    await ctx.send("message pinned")
-
+    await ctx.respond(f"Message: [Jump to message]({msg.jump_url})\n**Pinned by {str(ctx.author)[:-2]}**")
 
 #Selection menu for CPC outlooks
 class CPCOutlookView(discord.ui.View):
@@ -637,12 +643,83 @@ class TropicalView(discord.ui.View):
             unique_query_param = f'?random={random.randint(1, 1000)}'
             embed.set_image(url=f"https://www.nhc.noaa.gov/xgtwo/two_atl_7d0.png{unique_query_param}")
             await interaction.response.send_message(embed=embed)
-            
+
+
 #Send TropicalView selection to the user
 @bot.slash_command(description="Get NHC Tropical Outlook Maps")
 @commands.cooldown(1, 5, commands.BucketType.user)
 async def tropicaloutlook(ctx):
     await ctx.respond("Choose an option", view=TropicalView())
+
+def generate_options():
+    storms = realtime.Realtime().list_active_storms(basin='all')
+    selection_options = []
+    for s in storms:
+        storm = realtime.Realtime().get_storm(s)
+        if not storm.invest:
+            selection_options.append(discord.SelectOption(
+                label=f"{storm.name} | {storm.id}",
+                description=f"This storm is located in the {storm.basin}"
+            ))
+    return selection_options
+
+#Create a list of drop downs for the select menu
+class TropicalStormDropDown(discord.ui.Select):
+    def __init__(self, options):
+        super().__init__(
+            placeholder="Chose a storm",
+            min_values=1,
+            max_values=1,
+            options=options 
+        )
+    async def callback(self, interaction: discord.Interaction):
+        await interaction.response.send_message("generating...")
+
+        user_select = self.values[0].split(' | ')
+        storm = realtime.Realtime().get_storm(user_select[1])
+        proj = ccrs.PlateCarree()
+        fig = plt.figure(figsize=(11,8))
+        ax = plt.axes(projection=proj) 
+        ax.add_feature(cfeature.STATES.with_scale('50m'), linewidths=0.5, linestyle='solid', edgecolor='k')
+        ax.add_feature(cfeature.BORDERS.with_scale('50m'), linewidths=1.0, linestyle='solid', edgecolor='k')
+        ax.add_feature(cfeature.COASTLINE.with_scale('50m'), linewidths=1.0, linestyle='solid', edgecolor='k')
+        ax.add_feature(cfeature.LAND.with_scale('50m'), facecolor='#EEEEEE', edgecolor='face')
+        ax = utils.add_tropycal(ax)
+        storm.plot_forecast_realtime(ax=ax)
+        center_latlon = [storm.get_forecast_realtime()['lat'][0], storm.get_forecast_realtime()['lon'][0]]
+        ax.set_extent([center_latlon[1] - 40, center_latlon[1] + 15, center_latlon[0] + 20, center_latlon[0] - 15])
+        
+        plt.savefig('x.png')
+        plt.show(block=False)
+        plt.close("all")
+        storm_type = storm.get_forecast_realtime()['type'][0]
+        if(storm_type == 'TS'):
+            storm_type = 'Tropical Storm'
+        elif(storm_type == 'HU'):
+            storm_type = 'Hurricane'
+
+        nhc_embed = discord.Embed(
+            title=f"NHC Track for {storm_type} {storm.name}"
+        )
+        file = discord.File('x.png')
+        nhc_embed.set_image(url='attachment://x.png')
+        await interaction.edit_original_message(file=file, embed=nhc_embed)
+        #await interaction.response.send_message(f"Your favourite colour is {self.values[0]}")
+
+#create a view for the select menu (custom class instead of decorator)
+class TropicalStormsView(discord.ui.View):
+    def __init__(self, options):
+        super().__init__()
+        self.add_item(TropicalStormDropDown(options))
+
+#Send TCInfoView selection to the user to let them choose a tropical system to plot
+@bot.slash_command(description="Get NHC Prediction Plots")
+@commands.cooldown(1, 15, commands.BucketType.user)
+async def tropicalstorms(ctx):
+    await ctx.defer()
+    options = generate_options()
+    view = TropicalStormsView(options)
+    await ctx.respond("Choose an option", view=view)
 
 
 #Display error to user
@@ -650,7 +727,6 @@ async def tropicaloutlook(ctx):
 async def on_application_command_error(ctx, error):
     await ctx.defer(ephemeral=True)
     await ctx.followup.send(error)
-
 
 #Start Bot With Token
 bot.run(token)
