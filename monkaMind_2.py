@@ -1,5 +1,4 @@
 import json
-from pydoc import describe
 import random
 import os
 import re
@@ -651,8 +650,19 @@ class TropicalView(discord.ui.View):
 async def tropicaloutlook(ctx):
     await ctx.respond("Choose an option", view=TropicalView())
 
-def generate_options():
+#Generate data before bot starts, store the information in memory until an update command has been run
+storms = realtime.Realtime().list_active_storms(basin='all')
+storm_data_datetime = datetime.now()
+def update_storm_data():
+    global storms
+    global storm_data_datetime
     storms = realtime.Realtime().list_active_storms(basin='all')
+    storm_data_datetime = datetime.now()
+update_storm_data()
+
+#generate select menu options for tropicalstorms command
+def generate_options():
+    #storms = realtime.Realtime().list_active_storms(basin='all')
     selection_options = []
     for s in storms:
         storm = realtime.Realtime().get_storm(s)
@@ -663,17 +673,19 @@ def generate_options():
             ))
     return selection_options
 
+storm_options = generate_options()
+
 #Create a list of drop downs for the select menu
 class TropicalStormDropDown(discord.ui.Select):
     def __init__(self, options):
         super().__init__(
-            placeholder="Chose a storm",
+            placeholder=f"Chose a storm",
             min_values=1,
             max_values=1,
-            options=options 
+            options=options
         )
     async def callback(self, interaction: discord.Interaction):
-        await interaction.response.send_message("generating...")
+        await interaction.response.send_message("generating... <a:spin:1149889506628096161>")
 
         user_select = self.values[0].split(' | ')
         storm = realtime.Realtime().get_storm(user_select[1])
@@ -703,7 +715,7 @@ class TropicalStormDropDown(discord.ui.Select):
         )
         file = discord.File('x.png')
         nhc_embed.set_image(url='attachment://x.png')
-        await interaction.edit_original_message(file=file, embed=nhc_embed)
+        await interaction.edit_original_message(content="", file=file, embed=nhc_embed)
 
 #create a view for the select menu (custom class instead of decorator)
 class TropicalStormsView(discord.ui.View):
@@ -715,10 +727,19 @@ class TropicalStormsView(discord.ui.View):
 @bot.slash_command(description="Get NHC Prediction Plots")
 @commands.cooldown(1, 15, commands.BucketType.user)
 async def tropicalstorms(ctx):
-    await ctx.defer()
-    options = generate_options()
+    #await ctx.defer()
+    options = storm_options
     view = TropicalStormsView(options)
-    await ctx.respond("Choose an option", view=view)
+    await ctx.respond(f"This data is {round((datetime.now() - storm_data_datetime).total_seconds() / 60, 2)} minute(s) old.  Use /updatetropicalstorms to refresh it", view=view)
+
+@bot.slash_command(description="Update the tropical storm data with most recent data")
+@commands.cooldown(1, 120, commands.BucketType.user)
+async def updatetropicalstorms(ctx):
+    await ctx.respond(f"Updating... <a:spin:1149889506628096161>")
+    update_storm_data()
+    message = await ctx.send(content="Generating options... <a:spin:1149889506628096161>")
+    generate_options()
+    await message.edit(content="All Storm Data is now updated.")
 
 
 #Display error to user
