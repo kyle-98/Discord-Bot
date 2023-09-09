@@ -704,7 +704,6 @@ class TropicalStormDropDown(discord.ui.Select):
         file = discord.File('x.png')
         nhc_embed.set_image(url='attachment://x.png')
         await interaction.edit_original_message(file=file, embed=nhc_embed)
-        #await interaction.response.send_message(f"Your favourite colour is {self.values[0]}")
 
 #create a view for the select menu (custom class instead of decorator)
 class TropicalStormsView(discord.ui.View):
