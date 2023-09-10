@@ -8,6 +8,7 @@ from tropycal import utils, realtime
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import matplotlib.pyplot as plt
+from geopy.geocoders import Nominatim
 
 import discord
 import asyncio
@@ -31,6 +32,7 @@ with open("config.json") as jFile:
     myWeatherAppKey = data["MY_WEATHER_APPLICATION_KEY"]
     genWeatherApiKey = data["GENERAL_WEATHER_API_KEY"]
     pin_channel_id = data["PIN_CHANNEL_ID"]
+    geopy_username = data["GEOPY_USERNAME"]
 
 #get image links from file
 with open('reactionList.txt', 'r') as imageFile:
@@ -117,6 +119,30 @@ def getWeather(city):
     else:
         return(f"Error for {city} | Error code: {data['cod']} | Error Message: {data['message']}")
 
+#get lat and long from a US ONLY city based on city name
+def get_latlong(loc):
+    geolocator = Nominatim(user_agent=geopy_username)
+    location = geolocator.geocode(loc)
+    return (location.latitude, location.longitude)
+
+#return noaa api information about the city
+def get_location_info(location):
+    response = requests.get(f'https://api.weather.gov/points/{location[0]},{location[1]}')
+    data = response.json()
+    forecast_link = data['properties']['forecast']
+    hours_forecast_link = data['properties']['forecastHourly']
+    location_info = [data['properties']['relativeLocation']['properties']['city'], data['properties']['relativeLocation']['properties']['state']]
+    return [forecast_link, hours_forecast_link, location_info]
+
+#return data from noaa api dealing with the two-part daily forecast
+def get_forecast_data(fl):
+    response = requests.get(fl)
+    data = response.json()
+    periods = []
+    for i in data['properties']['periods']:
+        periods.append(i)
+    return periods
+
 #Initialize Bot
 #debug_guilds=[guildID],
 bot = discord.Bot(intents=discord.Intents.all())
@@ -201,6 +227,38 @@ async def weather(ctx, city):
         timestamp = datetime.now()
     )
     await ctx.respond(embed=embed)
+
+#Weather of any US city
+@bot.slash_command(description="Get the weather of any city in the United States ONLY use <city>, <state> for city field")
+@commands.cooldown(1, 10, commands.BucketType.user)
+async def weatherforecast(ctx, city):
+    pages = []
+    location = get_latlong(city)
+    location_info = get_location_info(location)
+    forecast_data = get_forecast_data(location_info[0])
+    for fd in forecast_data:
+        precip_prob = fd["probabilityOfPrecipitation"]["value"]
+        desc = f"""Temperature: {fd["temperature"]} °F
+        Precip Probability: {str(precip_prob) + '%' if precip_prob != None else '0%'}
+        Dewpoint: {(fd["dewpoint"]["value"] * (9/5)) + 32} °F
+        Humidity: {fd["relativeHumidity"]["value"]}%
+        Wind Speed: {fd["windSpeed"]}
+        Wind Direction: {fd["windDirection"]}
+
+        Short Desc: {fd["shortForecast"]}
+        
+        Detailed Forecast: {fd["detailedForecast"]}
+        """
+        embed = discord.Embed(
+            title = f'Weather for {fd["name"]} in {location_info[2][0]}, {location_info[2][1]}',
+            description=desc,
+            color = 0xFFC0CB
+        )
+        embed.set_thumbnail(url=f'{fd["icon"][:-11]}size=large')
+        p = Page(embed=embed)
+        pages.append(p)
+    await ctx.respond(content="Weather Forecast:")
+    await paginator.send(ctx.channel, pages, type=2, author=ctx.author, disable_on_timeout=False)
 
 #MW3 Server List Command
 @bot.slash_command(description="MW3 Server List")
