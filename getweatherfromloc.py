@@ -41,7 +41,7 @@ def parse_forecast_data(periods):
         print(f'Detailed Forecast: {p["detailedForecast"]}')
         print('-------------')
 
-location = get_latlong('Schenetady, NY')
+location = get_latlong('<city>, <state>(two letters: FL)')
 location_info = get_location_info(location)
 forecast_data = get_forecast_data(location_info[0])
 parse_forecast_data(forecast_data)
