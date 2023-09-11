@@ -153,17 +153,7 @@ def check_date(date):
     except ValueError:
         return False
 
-#Generate gif of 64 images from tropical tidbits
-def gen_gif_map(base_url):
-    image_links = []
-    for i in range(1, 65):
-        image_links.append(f'{base_url}{i}.png')
-    gif_frames = []
-    for link in image_links:
-        response = requests.get(link)
-        image = im.open(BytesIO(response.content))
-        gif_frames.append(image)
-    gif_frames[0].save('mslp.gif', format='GIF', append_images=gif_frames[1:], save_all=True, duration=200, loop=0)
+
 
 #Initialize Bot
 #debug_guilds=[guildID],
@@ -723,7 +713,6 @@ class TropicalView(discord.ui.View):
             embed.set_image(url=f"https://www.nhc.noaa.gov/xgtwo/two_atl_7d0.png{unique_query_param}")
             await interaction.response.send_message(embed=embed)
 
-
 #Send TropicalView selection to the user
 @bot.slash_command(description="Get NHC Tropical Outlook Maps")
 @commands.cooldown(1, 5, commands.BucketType.user)
@@ -821,37 +810,114 @@ async def updatetropicalstorms(ctx):
     generate_options()
     await message.edit(content="All Storm Data is now updated.")
 
+#Generate gif from 64 images from tropical tidbits
+def gen_gif_map(base_url, model):
+    print('Generating gif...')
+    image_links = []
+    gif_frames = []
+    if len(base_url) == 2:
+        if model == 'gdps':
+            nums = ['000', '003', '006', '009', '012', '015', '018', '021', '024', '027', '030', '033', '036', '039', '042', '045', '048', '051', '054', '057', '060', '063', '066', '069', '072', '075', '078', '081', '084', '087', '090', '093', '096', '099', '102', '105', '108', '111', '114', '117', '120', '123', '126', '129', '132', '135', '138', '141', '144', '147', '150', '153', '156', '159', '162', '165', '168', '171', '174', '177', '180', '183', '186', '189', '192', '195', '198', '201', '204', '207', '210', '213', '216', '219', '222', '225', '228', '231', '234', '237', '240']
+        else:
+            nums = ['000', '003', '006', '009', '012', '015', '018', '021', '024', '027', '030', '033', '036', '039', '042', '045', '048', '051', '054', '057', '060', '063', '066', '069', '072', '075', '078', '081', '084', '087', '090', '093', '096', '099', '102', '105', '108', '111', '114', '117', '120', '123', '126', '129', '132', '135', '138', '141', '144', '147', '150', '153', '156', '159', '162', '165', '168', '171', '174', '177', '180', '183', '186', '189', '192', '195', '198', '201', '204', '207', '210', '213', '216', '219', '222', '225', '228', '231', '234', '237', '240', '246', '252', '258', '264', '270', '276', '282', '288', '294', '300']       
+        for i in nums:
+            image_links.append(f'{base_url[0]}{i}/{base_url[1]}')
+    else:
+        if model == 'gem':
+            for i in range(1, 41):
+                image_links.append(f'{base_url[0]}{i}.png')
+        else:
+            for i in range(1, 65):
+                image_links.append(f'{base_url[0]}{i}.png')
+        
+    for link in image_links:
+        response = requests.get(link)
+        image = im.open(BytesIO(response.content))
+        gif_frames.append(image)
+    gif_frames[0].save('gifmap.gif', format='GIF', append_images=gif_frames[1:], save_all=True, loop=0)
+    print('done generating gif')
 
+#Autocomplete autofill options for precip type based on the model choice
+def get_precip_types(ctx: discord.AutocompleteContext):
+    model_type = ctx.options['model']
+    if model_type == 'ecmwf':
+        return ['mslp']
+    else:
+        return ['mslp', 'snow']
 
-#Generate gif based on tropical tidbits GFS/ECMWF MSLP & Precip maps
-@bot.slash_command(description='Generate gif based on tropical tidbits GFS/ECWMF MSLP & Precip maps')
+#Autocomplete autofill options for region based on the website choice
+def get_regions(ctx: discord.AutocompleteContext):
+    site = ctx.options['site']
+    if site == 'tropicaltidbits':
+        return ['CONUS', 'North-West', 'North-Central', 'North-East', 'Eastern', 'South-West', 'South-Central', 'South-East', 'Western']
+    else:
+        return ['CONUS', 'North-West', 'North-Central', 'North-East', 'Mid-Atlantic','Sout-West', 'South-Central', 'South-East', 'Mid-West',]
+
+def gen_base_url(site, model, type, time, region, date):
+    tt_dict = {
+        'CONUS': 'us',
+        'North-West': 'nwus',
+        'North-Central': 'ncus',
+        'North-East': 'neus',
+        'Eastern': 'eus',
+        'South-West': 'swus',
+        'South-Central': 'scus',
+        'South-East': 'seus',
+        'Western': 'wus'
+    }
+    pw_dict = {
+        'CONUS': 'conus',
+        'North-West': 'us_nw',
+        'North-Central': 'us_nc',
+        'North-East': 'us_ne',
+        'Mid-Atlantic': 'us_ma',
+        'South-West': 'us_sw',
+        'South-Central': 'us_sc',
+        'South-East': 'us_se',
+        'Mid-West': 'us_mw'
+    }
+    if site == 'tropicaltidbits':
+        if model == 'cmc':
+            model = 'gem'
+        base_url = [f'https://www.tropicaltidbits.com/analysis/models/{model}/{date[0]}{date[1]}{date[2]}{time}/{model}_']
+        if type == 'mslp':
+            base_url[0] += f'mslp_pcpn_frzn_{tt_dict[region]}_'
+        else:
+            base_url[0] += f'asnow_{tt_dict[region]}_'
+        print(base_url)
+        gen_gif_map(base_url, model)
+
+    else:
+        if model == 'cmc':
+            model = 'gdps'
+        base_url = [f'https://m1o.pivotalweather.com/maps/models/{model}/{date[0]}{date[1]}{date[2]}{time}/']
+        if type == 'mslp':
+            base_url.append(f'prateptype_cat-imp.{pw_dict[region]}.png')
+        else:
+            base_url.append(f'sn10_acc-imp.{pw_dict[region]}.png')
+        gen_gif_map(base_url, model)
+
+#Generate gif based on tropical tidbits or pivotal weather GFS/ECWMF/CMC maps
+@bot.slash_command(description='Generate gif based on tropical tidbits or pivotal weather GFS/ECMWF/CMC maps')
 @commands.cooldown(1, 15, commands.BucketType.user)
-async def mslpgif(
+async def modelgifs(
     ctx,
-    model: discord.Option(str, choices=['gfs', 'ecmwf'], required=True),
+    site: discord.Option(str, choices=['tropicaltidbits', 'pivotalweather'], required=True),
+    model: discord.Option(str, choices=['gfs', 'ecmwf', 'cmc'], required=True),
+    type: discord.Option(str, autocomplete=discord.utils.basic_autocomplete(get_precip_types), required=True),
     time: discord.Option(str, choices=['00', '06', '12', '18'], required=True),
-    region: discord.Option(str, 'Region of the US', choices=['us', 'nwus', 'ncus', 'neus', 'scus', 'eus', 'swus', 'seus', 'wus']),
+    region: discord.Option(str, 'Region of the US', autocomplete=discord.utils.basic_autocomplete(get_regions), required=True),
     date: discord.Option(str, 'Use the format: YYYY-MM-DD', required=True)
 ):
-    if(not check_date(date)):
-        pass
-    else:
-        td = date.split('-')
-        if(datetime(int(td[0]), int(td[1].lstrip('0')), int(td[2].lstrip('0'))) > datetime.today()):
-            pass
-        else:
-            await ctx.defer()
-            if(model == 'gfs'):
-                base_url = f'https://www.tropicaltidbits.com/analysis/models/{model}/{td[0]}{td[1]}{td[2]}{time}/{model}_mslp_pcpn_frzn_{region}_'
-            else:
-                base_url = f'https://www.tropicaltidbits.com/analysis/models/{model}/{td[0]}{td[1]}{td[2]}{time}/{model}_mslp_pcpn_{region}_'
-            gen_gif_map(base_url)
-            embed = discord.Embed(
-                title=f'{model.upper()} MSLP & Precip Gif'
-            )
-            embed.set_image(url='attachment://mslp.gif')
-            file = discord.File('mslp.gif')
-            await ctx.followup.send(file=file, embed=embed)
+    td = date.split('-')
+    await ctx.defer()
+    gen_base_url(site, model, type, time, region, td)
+    embed = discord.Embed(
+        title=f'{model.upper()} MSLP & Precip Gif'
+    )
+    embed.set_image(url='attachment://gifmap.gif')
+    file = discord.File('gifmap.gif')
+    await ctx.followup.send(file=file, embed=embed)
 
 #Display error to user
 @bot.event
