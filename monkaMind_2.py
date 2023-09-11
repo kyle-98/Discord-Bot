@@ -9,6 +9,8 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import matplotlib.pyplot as plt
 from geopy.geocoders import Nominatim
+from io import BytesIO
+from PIL import Image as im
 
 import discord
 import asyncio
@@ -143,6 +145,26 @@ def get_forecast_data(fl):
         periods.append(i)
     return periods
 
+#Check if a date is valid
+def check_date(date):
+    try:
+        datetime.strptime(date, '%Y-%m-%d')
+        return True
+    except ValueError:
+        return False
+
+#Generate gif of 64 images from tropical tidbits
+def gen_gif_map(base_url):
+    image_links = []
+    for i in range(1, 65):
+        image_links.append(f'{base_url}{i}.png')
+    gif_frames = []
+    for link in image_links:
+        response = requests.get(link)
+        image = im.open(BytesIO(response.content))
+        gif_frames.append(image)
+    gif_frames[0].save('mslp.gif', format='GIF', append_images=gif_frames[1:], save_all=True, duration=200, loop=0)
+
 #Initialize Bot
 #debug_guilds=[guildID],
 bot = discord.Bot(intents=discord.Intents.all())
@@ -246,7 +268,7 @@ async def weatherforecast(ctx, city):
         Wind Direction: {fd["windDirection"]}
 
         Short Desc: {fd["shortForecast"]}
-        
+
         Detailed Forecast: {fd["detailedForecast"]}
         """
         embed = discord.Embed(
@@ -799,6 +821,37 @@ async def updatetropicalstorms(ctx):
     generate_options()
     await message.edit(content="All Storm Data is now updated.")
 
+
+
+#Generate gif based on tropical tidbits GFS/ECMWF MSLP & Precip maps
+@bot.slash_command(description='Generate gif based on tropical tidbits GFS/ECWMF MSLP & Precip maps')
+@commands.cooldown(1, 15, commands.BucketType.user)
+async def mslpgif(
+    ctx,
+    model: discord.Option(str, choices=['gfs', 'ecmwf'], required=True),
+    time: discord.Option(str, choices=['00', '06', '12', '18'], required=True),
+    region: discord.Option(str, 'Region of the US', choices=['us', 'nwus', 'ncus', 'neus', 'scus', 'eus', 'swus', 'seus', 'wus']),
+    date: discord.Option(str, 'Use the format: YYYY-MM-DD', required=True)
+):
+    if(not check_date(date)):
+        pass
+    else:
+        td = date.split('-')
+        if(datetime(int(td[0]), int(td[1].lstrip('0')), int(td[2].lstrip('0'))) > datetime.today()):
+            pass
+        else:
+            await ctx.defer()
+            if(model == 'gfs'):
+                base_url = f'https://www.tropicaltidbits.com/analysis/models/{model}/{td[0]}{td[1]}{td[2]}{time}/{model}_mslp_pcpn_frzn_{region}_'
+            else:
+                base_url = f'https://www.tropicaltidbits.com/analysis/models/{model}/{td[0]}{td[1]}{td[2]}{time}/{model}_mslp_pcpn_{region}_'
+            gen_gif_map(base_url)
+            embed = discord.Embed(
+                title=f'{model.upper()} MSLP & Precip Gif'
+            )
+            embed.set_image(url='attachment://mslp.gif')
+            file = discord.File('mslp.gif')
+            await ctx.followup.send(file=file, embed=embed)
 
 #Display error to user
 @bot.event
