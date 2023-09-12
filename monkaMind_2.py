@@ -816,10 +816,16 @@ def gen_gif_map(base_url, model):
     image_links = []
     gif_frames = []
     if len(base_url) == 2:
-        if model == 'gdps':
-            nums = ['000', '003', '006', '009', '012', '015', '018', '021', '024', '027', '030', '033', '036', '039', '042', '045', '048', '051', '054', '057', '060', '063', '066', '069', '072', '075', '078', '081', '084', '087', '090', '093', '096', '099', '102', '105', '108', '111', '114', '117', '120', '123', '126', '129', '132', '135', '138', '141', '144', '147', '150', '153', '156', '159', '162', '165', '168', '171', '174', '177', '180', '183', '186', '189', '192', '195', '198', '201', '204', '207', '210', '213', '216', '219', '222', '225', '228', '231', '234', '237', '240']
+        if model == 'gdps' or model == 'ecmwf':
+            nums = ['006', '012', '018', '024', '030', '036', '042', '048', '054', '060', '066', '072', '078', '084', 
+            '090', '096', '102', '108', '114', '120', '126', '132', '138', '144', '150', '156', '162', '168', '174', 
+            '180', '186', '192', '198', '204', '210', '216', '222', '228', '234', '240']
         else:
-            nums = ['000', '003', '006', '009', '012', '015', '018', '021', '024', '027', '030', '033', '036', '039', '042', '045', '048', '051', '054', '057', '060', '063', '066', '069', '072', '075', '078', '081', '084', '087', '090', '093', '096', '099', '102', '105', '108', '111', '114', '117', '120', '123', '126', '129', '132', '135', '138', '141', '144', '147', '150', '153', '156', '159', '162', '165', '168', '171', '174', '177', '180', '183', '186', '189', '192', '195', '198', '201', '204', '207', '210', '213', '216', '219', '222', '225', '228', '231', '234', '237', '240', '246', '252', '258', '264', '270', '276', '282', '288', '294', '300']       
+            nums = ['006', '012', '018', '024', '030', '036', '042', '048', '054', '060', '066', '072', '078', '084', 
+                    '090', '096', '102', '108', '114', '120', '126', '132', '138', '144', '150', '156', '162', '168', 
+                    '174', '180', '186', '192', '198', '204', '210', '216', '222', '228', '234', '240', '246', '252', 
+                    '258', '264', '270', '276', '282', '288', '294', '300', '306', '312', '318', '324', '330', '336', 
+                    '342', '348', '354', '360', '366', '372', '378', '384']
         for i in nums:
             image_links.append(f'{base_url[0]}{i}/{base_url[1]}')
     else:
@@ -829,13 +835,25 @@ def gen_gif_map(base_url, model):
         else:
             for i in range(1, 65):
                 image_links.append(f'{base_url[0]}{i}.png')
-        
+    
+    check = True
     for link in image_links:
         response = requests.get(link)
-        image = im.open(BytesIO(response.content))
-        gif_frames.append(image)
-    gif_frames[0].save('gifmap.gif', format='GIF', append_images=gif_frames[1:], save_all=True, loop=0)
-    print('done generating gif')
+        if response.status_code == 404:
+            check = False
+        else:
+            image = im.open(BytesIO(response.content))
+            gif_frames.append(image)
+            check = True
+        if not check:
+            break
+    if not check:
+        print('cancelled gif generation')
+        return False
+    else:
+        gif_frames[0].save('gifmap.gif', format='GIF', append_images=gif_frames[1:], save_all=True, loop=0)
+        print('done generating gif')
+        return True
 
 #Autocomplete autofill options for precip type based on the model choice
 def get_precip_types(ctx: discord.AutocompleteContext):
@@ -881,21 +899,29 @@ def gen_base_url(site, model, type, time, region, date):
             model = 'gem'
         base_url = [f'https://www.tropicaltidbits.com/analysis/models/{model}/{date[0]}{date[1]}{date[2]}{time}/{model}_']
         if type == 'mslp':
-            base_url[0] += f'mslp_pcpn_frzn_{tt_dict[region]}_'
+            if model == 'ecmwf':
+                base_url[0] += f'mslp_pcpn_{tt_dict[region]}_'
+            else:
+                base_url[0] += f'mslp_pcpn_frzn_{tt_dict[region]}_'
         else:
             base_url[0] += f'asnow_{tt_dict[region]}_'
-        print(base_url)
-        gen_gif_map(base_url, model)
-
+        #return gen_gif_map(base_url, model)
     else:
         if model == 'cmc':
             model = 'gdps'
+        if model == 'ecmwf':
+            model = 'ecmwf_full'
         base_url = [f'https://m1o.pivotalweather.com/maps/models/{model}/{date[0]}{date[1]}{date[2]}{time}/']
         if type == 'mslp':
-            base_url.append(f'prateptype_cat-imp.{pw_dict[region]}.png')
+            if model == 'ecmwf':
+                base_url.append(f'prateptype_cat_ecmwf-imp.{pw_dict[region]}.png')
+            else:
+                base_url.append(f'prateptype_cat-imp.{pw_dict[region]}.png')
         else:
             base_url.append(f'sn10_acc-imp.{pw_dict[region]}.png')
-        gen_gif_map(base_url, model)
+        #return gen_gif_map(base_url, model)
+    map_check = gen_gif_map(base_url, model)
+    return map_check
 
 #Generate gif based on tropical tidbits or pivotal weather GFS/ECWMF/CMC maps
 @bot.slash_command(description='Generate gif based on tropical tidbits or pivotal weather GFS/ECMWF/CMC maps')
@@ -909,15 +935,25 @@ async def modelgifs(
     region: discord.Option(str, 'Region of the US', autocomplete=discord.utils.basic_autocomplete(get_regions), required=True),
     date: discord.Option(str, 'Use the format: YYYY-MM-DD', required=True)
 ):
-    td = date.split('-')
+    
     await ctx.defer()
-    gen_base_url(site, model, type, time, region, td)
-    embed = discord.Embed(
-        title=f'{model.upper()} MSLP & Precip Gif'
-    )
-    embed.set_image(url='attachment://gifmap.gif')
-    file = discord.File('gifmap.gif')
-    await ctx.followup.send(file=file, embed=embed)
+    cd = check_date(date)
+    td = date.split('-')
+    if not cd:
+        await ctx.followup.send('That is not a valid date')
+    elif datetime(int(td[0]), int(td[1].lstrip('0')), int(td[2].lstrip('0'))) > datetime.today():
+        await ctx.followup.send('You cannot use dates in the future')
+    else:
+        check = gen_base_url(site, model, type, time, region, td)
+        if not check:
+            await ctx.followup.send('The model time or map is not available')
+        else:
+            embed = discord.Embed(
+                title=f'{model.upper()} MSLP & Precip Gif'
+            )
+            embed.set_image(url='attachment://gifmap.gif')
+            file = discord.File('gifmap.gif')
+            await ctx.followup.send(file=file, embed=embed)
 
 #Display error to user
 @bot.event
