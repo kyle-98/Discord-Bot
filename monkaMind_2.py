@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from geopy.geocoders import Nominatim
 from io import BytesIO
 from PIL import Image as im
+from pytube import YouTube as YT
 
 import discord
 import asyncio
@@ -801,6 +802,7 @@ async def tropicalstorms(ctx):
     view = TropicalStormsView(options)
     await ctx.respond(f"This data is {round((datetime.now() - storm_data_datetime).total_seconds() / 60, 2)} minute(s) old.  Use /updatetropicalstorms to refresh it", view=view)
 
+#update tropical storm data with the most recent data from NOAA servers
 @bot.slash_command(description="Update the tropical storm data with most recent data")
 @commands.cooldown(1, 120, commands.BucketType.user)
 async def updatetropicalstorms(ctx):
@@ -954,6 +956,35 @@ async def modelgifs(
             embed.set_image(url='attachment://gifmap.gif')
             file = discord.File('gifmap.gif')
             await ctx.followup.send(file=file, embed=embed)
+
+#Check video length
+def check_vid_length(url):
+    try:
+        video = YT(url)
+        vl = video.length
+        return vl
+    except:
+        return None
+#Download youtube mp3 file
+def download_mp3(url):
+    video = YT(url)
+    audio = video.streams.filter(only_audio=True).first()
+    audio.download(output_path=os.getcwd(), filename='x.mp3')
+
+#Download youtube video
+@bot.slash_command(description='Convert youtube to mp3')
+@commands.cooldown(1, 15, commands.BucketType.user)
+async def youtubetomp3(ctx, url: discord.Option(str, required= True)):
+    video_check = check_vid_length(url)
+    if video_check == None:
+        await ctx.respond('Not a valid youtube url')
+    elif video_check > 2400:
+        await ctx.respond('Video is too long to convert (videos must be less than 40 minutes)')
+    else:
+        await ctx.defer()
+        download_mp3(url)
+    file = discord.File('x.mp3')
+    await ctx.followup.send(content="Here is your file <a:Chatting:1149889559006560377>",file=file)
 
 #Display error to user
 @bot.event
