@@ -1048,10 +1048,11 @@ async def cyclonehistory(
                    basin.plot_analogs_from_point((latlon[0],latlon[1]),year_range=(int(yr[0]), int(yr[1])),radius=radius,ax=ax) 
             else:
                 await ctx.followup.send('Invalid year range')
-        if dots_or_lines == 'lines':
-            basin.plot_analogs_from_point((latlon[0],latlon[1]),radius=radius,prop={'dots':False,'linecolor':'category'},ax=ax)
         else:
-            basin.plot_analogs_from_point((latlon[0],latlon[1]),radius=radius,ax=ax)
+            if dots_or_lines == 'lines':
+                basin.plot_analogs_from_point((latlon[0],latlon[1]),radius=radius,prop={'dots':False,'linecolor':'category'},ax=ax)
+            else:
+                basin.plot_analogs_from_point((latlon[0],latlon[1]),radius=radius,ax=ax)
 
         plt.savefig('x.png')
         plt.show(block=False)
