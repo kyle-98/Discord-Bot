@@ -4,7 +4,7 @@ import os
 import re
 from datetime import datetime
 import random
-from tropycal import utils, realtime
+from tropycal import utils, realtime, tracks
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import matplotlib.pyplot as plt
@@ -745,6 +745,15 @@ def generate_options():
 
 storm_options = generate_options()
 
+def plot_boundaries(ax):
+    ax.add_feature(cfeature.STATES.with_scale('50m'), linewidths=0.5, linestyle='solid', edgecolor='k')
+    ax.add_feature(cfeature.BORDERS.with_scale('50m'), linewidths=1.0, linestyle='solid', edgecolor='k')
+    ax.add_feature(cfeature.COASTLINE.with_scale('50m'), linewidths=1.0, linestyle='solid', edgecolor='k')
+    ax.add_feature(cfeature.LAND.with_scale('50m'), facecolor='#EEEEEE', edgecolor='face')
+
+    return ax
+
+
 #Create a list of drop downs for the select menu
 class TropicalStormDropDown(discord.ui.Select):
     def __init__(self, options):
@@ -762,10 +771,11 @@ class TropicalStormDropDown(discord.ui.Select):
         proj = ccrs.PlateCarree()
         fig = plt.figure(figsize=(11,8))
         ax = plt.axes(projection=proj) 
-        ax.add_feature(cfeature.STATES.with_scale('50m'), linewidths=0.5, linestyle='solid', edgecolor='k')
-        ax.add_feature(cfeature.BORDERS.with_scale('50m'), linewidths=1.0, linestyle='solid', edgecolor='k')
-        ax.add_feature(cfeature.COASTLINE.with_scale('50m'), linewidths=1.0, linestyle='solid', edgecolor='k')
-        ax.add_feature(cfeature.LAND.with_scale('50m'), facecolor='#EEEEEE', edgecolor='face')
+        ax = plot_boundaries(ax)
+        # ax.add_feature(cfeature.STATES.with_scale('50m'), linewidths=0.5, linestyle='solid', edgecolor='k')
+        # ax.add_feature(cfeature.BORDERS.with_scale('50m'), linewidths=1.0, linestyle='solid', edgecolor='k')
+        # ax.add_feature(cfeature.COASTLINE.with_scale('50m'), linewidths=1.0, linestyle='solid', edgecolor='k')
+        # ax.add_feature(cfeature.LAND.with_scale('50m'), facecolor='#EEEEEE', edgecolor='face')
         ax = utils.add_tropycal(ax)
         storm.plot_forecast_realtime(ax=ax)
         center_latlon = [storm.get_forecast_realtime()['lat'][0], storm.get_forecast_realtime()['lon'][0]]
@@ -985,6 +995,78 @@ async def youtubetomp3(ctx, url: discord.Option(str, required= True)):
         download_mp3(url)
     file = discord.File('x.mp3')
     await ctx.followup.send(content="Here is your file <a:Chatting:1149889559006560377>",file=file)
+
+#Check if the string format: "YYYY-YYYY" has a valid year range
+def check_years(year_str):
+    pattern = r'^\d{4}-\d{4}$'
+    if re.match(pattern, year_str):
+        years = year_str.split('-')
+        try:
+            year1 = int(years[0])
+            year2 = int(years[1])
+            datetime(year1, 1, 1)
+            datetime(year2, 1, 1)
+            if int(year1) < int(year2) and int(year1) >= 1851 and int(year2) <= datetime.now().year:
+                return True
+            else:
+                return False
+        except ValueError:
+            return False
+    else:
+        return False
+
+# Allow user to generate map from city that shows all tropical cyclones that have went near the location
+@bot.slash_command(description='Generate map of all tropical cyclones from a given location')
+@commands.cooldown(1, 15, commands.BucketType.user)
+async def cyclonehistory(
+    ctx, 
+    location: discord.Option(str,'Provide: City, STATE(2 letters) or: City, Country', required=True),
+    radius: discord.Option(int, 'Radius, in km, around point to draw storm tracks', choices=[50, 100, 150], required=True),
+    dots_or_lines: discord.Option(str, 'Map will have dots or lines for tracks', choices=['dots', 'lines'], required=True),
+    year_range: discord.Option(str, 'Year range, must be YYYY-YYYY: 1851-2023, oldest year has to be >= 1851', default=None)
+):
+    proj = ccrs.PlateCarree()
+    fig = plt.figure(figsize=(11,8))
+    ax = plt.axes(projection=proj) 
+    ax = plot_boundaries(ax)
+    ax = utils.add_tropycal(ax)
+    await ctx.defer()
+    basin = tracks.TrackDataset(basin='both', include_btk=True)
+    try:
+        latlon = get_latlong(location)
+    except:
+        await ctx.followup.send('Invalid location string provided.')
+    
+    try:
+        if year_range:
+            year_check = check_years(year_range)
+            if year_check:
+                yr = year_range.split('-')
+                if dots_or_lines == 'lines':
+                    basin.plot_analogs_from_point((latlon[0],latlon[1]),year_range=(int(yr[0]), int(yr[1])),radius=radius,prop={'dots':False,'linecolor':'category'},ax=ax)
+                else:
+                   basin.plot_analogs_from_point((latlon[0],latlon[1]),year_range=(int(yr[0]), int(yr[1])),radius=radius,ax=ax) 
+            else:
+                await ctx.followup.send('Invalid year range')
+        if dots_or_lines == 'lines':
+            basin.plot_analogs_from_point((latlon[0],latlon[1]),radius=radius,prop={'dots':False,'linecolor':'category'},ax=ax)
+        else:
+            basin.plot_analogs_from_point((latlon[0],latlon[1]),radius=radius,ax=ax)
+
+        plt.savefig('x.png')
+        plt.show(block=False)
+        plt.close("all")
+        loc_split = location.split(', ')
+        embed = discord.Embed(
+            title=f'TC Tracks within a {radius} km range of {loc_split[0]}, {loc_split[1]}'
+        )
+        file = discord.File('x.png')
+        embed.set_image(url='attachment://x.png')
+        await ctx.followup.send(file=file, embed=embed)
+    except:
+        await ctx.followup.send('An error occured, try again.')
+    
+
 
 #Display error to user
 @bot.event
