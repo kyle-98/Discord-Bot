@@ -819,7 +819,8 @@ async def updatetropicalstorms(ctx):
     await ctx.respond(f"Updating... <a:spin:1149889506628096161>")
     update_storm_data()
     message = await ctx.send(content="Generating options... <a:spin:1149889506628096161>")
-    generate_options()
+    global storm_options
+    storm_options = generate_options()
     await message.edit(content="All Storm Data is now updated.")
 
 #Generate gif from 64 images from tropical tidbits
