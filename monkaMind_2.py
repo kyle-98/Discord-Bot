@@ -1021,6 +1021,43 @@ def check_years(year_str):
     else:
         return False
 
+
+#Image Manipulation
+@bot.slash_command(description='Edit images')
+@commands.cooldown(1, 5, commands.BucketType.user)
+async def edit_image(
+    ctx,
+    action: discord.Option(str, 'Choose edit action', choices=['flip horizontal', 'flip vertical'], required=True),
+    image_link: discord.Option(str, 'Enter an image URL', required=False, default=''),
+):
+    try:
+        os.remove('unknown.jpg')
+    except:
+        pass
+    await ctx.defer()
+    if image_link:
+        if not image_link.endswith('.gif'):
+            try:
+                requestImage(image_link)
+            except:
+                await ctx.respond('invalid image link')
+    else:
+        message = await ctx.channel.history(limit=2).flatten()
+        if message[1].attachments:
+            attach = message[1].attachments[0]
+            requestImage(attach.url)
+        elif message[1].content.startswith("https://"):
+            requestImage(message[1].content)
+        else:
+            await ctx.respond("No Images Found")
+    edited_image = im.open('unknown.jpg')
+    if action == 'flip horizontal':
+        edited_image = edited_image.transpose(im.FLIP_LEFT_RIGHT)
+    else:
+        edited_image = edited_image.transpose(im.FLIP_TOP_BOTTOM)
+    edited_image.save('unknown.jpg')
+    await ctx.respond(file=discord.File("unknown.jpg"))
+
 # Allow user to generate map from city that shows all tropical cyclones that have went near the location
 @bot.slash_command(description='Generate map of all tropical cyclones from a given location')
 @commands.cooldown(1, 15, commands.BucketType.user)
