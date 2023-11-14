@@ -16,6 +16,7 @@ from pytube import YouTube as YT
 import discord
 import asyncio
 import requests
+import subprocess
 import wand
 import wand.image
 from discord.ext import commands
@@ -980,7 +981,8 @@ def check_vid_length(url):
 def download_mp3(url):
     video = YT(url)
     audio = video.streams.filter(only_audio=True).first()
-    audio.download(output_path=os.getcwd(), filename='x.mp3')
+    audio.download(output_path=os.getcwd(), filename=f'{audio.title}.mp4')
+    return audio.title
 
 #Download youtube video
 @bot.slash_command(description='Convert youtube to mp3')
@@ -993,9 +995,12 @@ async def youtubetomp3(ctx, url: discord.Option(str, required= True)):
         await ctx.respond('Video is too long to convert (videos must be less than 40 minutes)')
     else:
         await ctx.defer()
-        download_mp3(url)
-    file = discord.File('x.mp3')
+        video_title = download_mp3(url)
+        subprocess.run(['ffmpeg', '-i', f'{os.getcwd()}\\{video_title}.mp4', f'{os.getcwd()}\\{video_title}.mp3'])
+    file = discord.File(f'{video_title}.mp3')
     await ctx.followup.send(content="Here is your file <a:Chatting:1149889559006560377>",file=file)
+    os.remove(f'{os.getcwd()}\\{video_title}.mp4')
+    os.remove(f'{os.getcwd()}\\{video_title}.mp3')
 
 #Check if the string format: "YYYY-YYYY" has a valid year range
 def check_years(year_str):
