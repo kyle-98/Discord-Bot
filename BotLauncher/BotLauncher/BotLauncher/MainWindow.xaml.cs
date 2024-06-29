@@ -20,16 +20,21 @@ namespace BotLauncher
           /// The default path of the python bot script when downloaded from repo
           /// </summary>
           string DEFAULT_BOT_PATH = $@"{Environment.CurrentDirectory}\Scripts\monkamind.py"; //please let me remember to rename the bot in the repo
-
+          public static string? DEFAULT_PYTHON_PATH;
 
           public MainWindow()
           {
                InitializeComponent();
 
-               //Check to see if the bot path is set in the app.config, if it is, don't reset it, if it isn't set it
-               if (!ConfigOperations.VerifyBotPath()) { CheckBotFileExist(DEFAULT_BOT_PATH); }
-               else { CheckBotFileExist(ConfigOperations.GetBotPath()); }
+               //Run startup checks to verify all things are installed properly
+              
           }
+
+          /// <summary>
+          /// Allow other classes to edit the <see cref="DEFAULT_PYTHON_PATH"/> variable
+          /// </summary>
+          /// <param name="value">The value that will be assigned to <see cref="DEFAULT_PYTHON_PATH"/></param>
+          public static void SetDEFAULT_PYTHON_PATH_Variable(string? value) => DEFAULT_PYTHON_PATH = value;
 
           /// <summary>
           /// Check if the bot filepath that is currently saved in the app.config file exists and is valid

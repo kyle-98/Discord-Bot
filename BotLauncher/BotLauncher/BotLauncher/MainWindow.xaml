@@ -13,8 +13,10 @@
           <ToolBarTray DockPanel.Dock="Top" Background="#272727">
                <ToolBar Style="{DynamicResource ToolBarStyle}" Background="#272727" BorderBrush="{x:Null}" BorderThickness="0">
                     <Menu Background="#262626" BorderBrush="Transparent" BorderThickness="0">
-                         <MenuItem Style="{StaticResource MenuItemStyle1}" Background="#272727" BorderBrush="Transparent" BorderThickness="0" Foreground="#F7F7F7F7" Header="File">
+                         <MenuItem Style="{StaticResource MenuItemStyle1}" Background="#272727" BorderBrush="Transparent" BorderThickness="0" Foreground="#F7F7F7F7" Header="Options">
                               <MenuItem Style="{StaticResource MenuItemStyle1}" Name="SetBotPath_Header" IsEnabled="True" Header="Set Bot Path" Click="SetBotPath_Header_Click"/>
+                              <MenuItem Style="{StaticResource MenuItemStyle1}" Name="SetPythonPath_Header" IsEnabled="True" Header="Set Python Path" />
+                              <MenuItem Style="{StaticResource MenuItemStyle1}" Name="RefreshApp_Header" IsEnabled="True" Header="Refresh App" />
                          </MenuItem>
                     </Menu>
                </ToolBar>
