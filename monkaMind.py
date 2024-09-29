@@ -22,8 +22,8 @@ import wand.image
 from discord.ext import commands
 from discord.ui import Button, View
 from discord import Embed
-from discord.commands import Option
-from paginator import Paginator, Page
+from discord import option
+from discord.ext.pages import Paginator, Page
 from wand.image import Image
 
 #get things from config
@@ -158,9 +158,7 @@ def check_date(date):
 
 
 #Initialize Bot
-#debug_guilds=[guildID],
 bot = discord.Bot(intents=discord.Intents.all())
-paginator = Paginator(bot)
 
 #################
 #   Bot Events  #
@@ -168,7 +166,7 @@ paginator = Paginator(bot)
 @bot.event
 async def on_ready():
     print(f'{bot.user} logged into the mainframe')
-    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.competing, name="the sea dogs arena"))
+    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="vtubers"))
 
 #####################
 #   Auto Reactions  #
@@ -187,15 +185,16 @@ async def on_message(message):
 #####################
 
 #SOT Command
-@bot.command(description="sot of thieves")
+@bot.command(description="sot of thieves", integration_types={discord.IntegrationType.guild_install})
 @commands.cooldown(1, 60, commands.BucketType.user)
 async def sot(ctx):
     await ctx.respond(sotResponse())
 
 #Magik Command
-@bot.slash_command(description="magik and image")
+@bot.slash_command(description="magik and image", integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install})
 @commands.cooldown(1, 5, commands.BucketType.user)
-async def magik(ctx, message: Option(str, "Enter a URL", required=False, default='')):
+@option('message', description="Enter a URL", default='')
+async def magik(ctx, message):
     await ctx.defer()
     await asyncio.sleep(5)
     if message: 
@@ -215,7 +214,7 @@ async def magik(ctx, message: Option(str, "Enter a URL", required=False, default
     
 
 #Room Temp Command
-@bot.slash_command(description="Am I dying in fire rn?")
+@bot.slash_command(description="Am I dying in fire rn?", integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install})
 @commands.cooldown(1, 15, commands.BucketType.user)
 async def roomtemp(ctx):
     await ctx.defer()
@@ -230,7 +229,7 @@ async def roomtemp(ctx):
     await ctx.respond(file=file, embed=embed)
 
 #Weather of any City Command
-@bot.slash_command(description="Get weather of a city")
+@bot.slash_command(description="Get weather of a city", integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install})
 @commands.cooldown(1, 15, commands.BucketType.user)
 async def weather(ctx, city):
     await ctx.defer()
@@ -243,7 +242,7 @@ async def weather(ctx, city):
     await ctx.respond(embed=embed)
 
 #Weather of any US city
-@bot.slash_command(description="Get the weather of any city in the United States ONLY use <city>, <state> for city field")
+@bot.slash_command(description="Get the weather of any city in the United States ONLY use <city>, <state> for city field", integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install})
 @commands.cooldown(1, 10, commands.BucketType.user)
 async def weatherforecast(ctx, city):
     pages = []
@@ -269,13 +268,14 @@ async def weatherforecast(ctx, city):
             color = 0xFFC0CB
         )
         embed.set_thumbnail(url=f'{fd["icon"][:-11]}size=large')
-        p = Page(embed=embed)
+        p = Page(embeds=[embed])
         pages.append(p)
-    await ctx.respond(content="Weather Forecast:")
-    await paginator.send(ctx.channel, pages, type=2, author=ctx.author, disable_on_timeout=False)
+    paginator = Paginator(pages=pages, author_check=False)
+    #await ctx.respond(content="Weather Forecast:")
+    await paginator.respond(ctx.interaction, ephemeral=False)
 
 #MW3 Server List Command
-@bot.slash_command(description="MW3 Server List")
+@bot.slash_command(description="MW3 Server List", integration_types={discord.IntegrationType.guild_install})
 async def mw3servers(ctx):
     await ctx.defer()
     await asyncio.sleep(5)
@@ -303,20 +303,20 @@ async def mw3servers(ctx):
     nl = "\n"
     for s in serverList:
         namesList = list(s[3])
-        a = Page(embed=discord.Embed(
+        a = Page(embeds=[discord.Embed(
             title = s[0],
             description = f"""Map: {s[1]}
             Player Count: {s[2]}
             Players:\n
             {nl.join(namesList)}
             """
-        ))
+        )])
         pages.append(a)
-    await ctx.followup.send("📈")
-    await paginator.send(ctx.channel, pages, type=2, author=ctx.author, disable_on_timeout=False)
+    paginator = Paginator(pages=pages, author_check=False)
+    await paginator.respond(ctx.interaction, ephemeral=False)
 
 #Rocket launch info command
-@bot.slash_command(description="Displays Upcoming Rocket Launches")
+@bot.slash_command(description="Displays Upcoming Rocket Launches", integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install})
 async def rocketlaunches(ctx):
     await ctx.defer()
     await asyncio.sleep(5)
@@ -393,13 +393,13 @@ async def rocketlaunches(ctx):
         e.add_field(name=f"Pad: {l[5][0]} | {l[5][1]}", value="\u200B")
         e.set_image(url=l[7])
         e.set_thumbnail(url=l[8])
-        p = Page(embed=e)
+        p = Page(embeds=[e])
         pages.append(p)
-    await ctx.followup.send("🚀")
-    await paginator.send(ctx.channel, pages, type=2, author=ctx.author, disable_on_timeout=False)
+    paginator = Paginator(pages=pages, author_check=False)
+    await paginator.respond(ctx.interaction, ephemeral=False)
 
 #Clock in command
-@bot.slash_command(description="Is it clock in time?")
+@bot.slash_command(description="Is it clock in time?", integration_types={discord.IntegrationType.guild_install})
 @commands.cooldown(1, 5, commands.BucketType.user)
 async def clockin(ctx):
     TODAYS_DATE = str(datetime.today())[0:10]
@@ -457,7 +457,7 @@ async def clockin(ctx):
         await ctx.respond(f"Sorry clock in time is at 1 am, good hands time.  Right now the time is: {timeNow}")
 
 #Clock in leaderboard command
-@bot.slash_command(description="Get the leaderboards for clock in times")
+@bot.slash_command(description="Get the leaderboards for clock in times", integration_types={discord.IntegrationType.guild_install})
 @commands.cooldown(1, 5, commands.BucketType.user)
 async def clockinleaderboard(ctx):
     await ctx.defer()
@@ -490,7 +490,7 @@ async def clockinleaderboard(ctx):
     await ctx.send(embed=embed)
 
 #Set clockin time for person
-@bot.slash_command(descrition="Set a user's times clocked in")
+@bot.slash_command(descrition="Set a user's times clocked in", integration_types={discord.IntegrationType.guild_install})
 @commands.is_owner()
 async def setclockin(ctx, user_id, times):
     await ctx.defer(ephemeral=True)
@@ -513,7 +513,7 @@ async def setclockin(ctx, user_id, times):
     await ctx.followup.send(f"Set {str(bot.get_user(user_id))} to {times} times clocked in.")
 
 #pin a message in a channel to bypass 50 pin limit
-@bot.slash_command(description="Pin a message in the pins channel")
+@bot.slash_command(description="Pin a message in the pins channel", integration_types={discord.IntegrationType.guild_install})
 @commands.cooldown(1, 5, commands.BucketType.user)
 async def pin(ctx, msg_id):
     msg = await ctx.fetch_message(msg_id)
@@ -569,7 +569,7 @@ async def pin(ctx, msg_id):
     await ctx.respond(f"Message: [Jump to message]({msg.jump_url})\n**Pinned by {str(ctx.author)[:-2]}**")
 
 #Context menu pin option
-@bot.message_command(name="Pin Message")
+@bot.message_command(name="Pin Message", integration_types={discord.IntegrationType.guild_install})
 async def pin_message(ctx, message: discord.Message):
     msg = await ctx.fetch_message(message.id)
     response_embed = discord.Embed(
@@ -674,7 +674,7 @@ class CPCOutlookView(discord.ui.View):
             await interaction.response.send_message(embeds=[temp_outlook_embed, precip_outlook_embed])
 
 #Send selection prompt for CPC outlooks
-@bot.slash_command(description="Get CPC Outlook Maps")
+@bot.slash_command(description="Get CPC Outlook Maps", integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install})
 @commands.cooldown(1, 5, commands.BucketType.user)
 async def cpcoutlook(ctx):
     await ctx.respond("Choose an option", view=CPCOutlookView())
@@ -716,20 +716,27 @@ class TropicalView(discord.ui.View):
             await interaction.response.send_message(embed=embed)
 
 #Send TropicalView selection to the user
-@bot.slash_command(description="Get NHC Tropical Outlook Maps")
+@bot.slash_command(description="Get NHC Tropical Outlook Maps", integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install})
 @commands.cooldown(1, 5, commands.BucketType.user)
 async def tropicaloutlook(ctx):
     await ctx.respond("Choose an option", view=TropicalView())
 
 #Generate data before bot starts, store the information in memory until an update command has been run
-storms = realtime.Realtime().list_active_storms(basin='all')
+try:
+    storms = realtime.Realtime().list_active_storms(basin='all')
+except:
+    storms = []
 storm_data_datetime = datetime.now()
 def update_storm_data():
     global storms
     global storm_data_datetime
     storms = realtime.Realtime().list_active_storms(basin='all')
     storm_data_datetime = datetime.now()
-update_storm_data()
+
+try:
+    update_storm_data()
+except:
+    pass
 
 #generate select menu options for tropicalstorms command
 def generate_options():
@@ -805,7 +812,7 @@ class TropicalStormsView(discord.ui.View):
         self.add_item(TropicalStormDropDown(options))
 
 #Send TCInfoView selection to the user to let them choose a tropical system to plot
-@bot.slash_command(description="Get NHC Prediction Plots")
+@bot.slash_command(description="Get NHC Prediction Plots", integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install})
 @commands.cooldown(1, 15, commands.BucketType.user)
 async def tropicalstorms(ctx):
     #await ctx.defer()
@@ -814,7 +821,7 @@ async def tropicalstorms(ctx):
     await ctx.respond(f"This data is {round((datetime.now() - storm_data_datetime).total_seconds() / 60, 2)} minute(s) old.  Use /updatetropicalstorms to refresh it", view=view)
 
 #update tropical storm data with the most recent data from NOAA servers
-@bot.slash_command(description="Update the tropical storm data with most recent data")
+@bot.slash_command(description="Update the tropical storm data with most recent data", integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install})
 @commands.cooldown(1, 120, commands.BucketType.user)
 async def updatetropicalstorms(ctx):
     await ctx.respond(f"Updating... <a:spin:1149889506628096161>")
@@ -938,18 +945,15 @@ def gen_base_url(site, model, type, time, region, date):
     return map_check
 
 #Generate gif based on tropical tidbits or pivotal weather GFS/ECWMF/CMC maps
-@bot.slash_command(description='Generate gif based on tropical tidbits or pivotal weather GFS/ECMWF/CMC maps')
+@bot.slash_command(description='Generate gif based on tropical tidbits or pivotal weather GFS/ECMWF/CMC maps', integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install})
 @commands.cooldown(1, 15, commands.BucketType.user)
-async def modelgifs(
-    ctx,
-    site: discord.Option(str, choices=['tropicaltidbits', 'pivotalweather'], required=True),
-    model: discord.Option(str, choices=['gfs', 'ecmwf', 'cmc'], required=True),
-    type: discord.Option(str, autocomplete=discord.utils.basic_autocomplete(get_precip_types), required=True),
-    time: discord.Option(str, choices=['00', '06', '12', '18'], required=True),
-    region: discord.Option(str, 'Region of the US', autocomplete=discord.utils.basic_autocomplete(get_regions), required=True),
-    date: discord.Option(str, 'Use the format: YYYY-MM-DD', required=True)
-):
-    
+@option("site", str, description="Enter source data website", choices=['tropicaltidbits', 'pivotalweather'], required=True)
+@option("model", str, description="Weather Model", autocomplete=discord.utils.basic_autocomplete(get_precip_types), required=True)
+@option("type", str, choices=['00', '06', '12', '18'], required=True)
+@option("time", str, choices=['00', '06', '12', '18'], required=True)
+@option("region", str, description='Region of the US', autocomplete=discord.utils.basic_autocomplete(get_regions), required=True)
+@option("date", str, description='Use the format: YYYY-MM-DD', required=True)
+async def modelgifs(ctx, site: str, model: str, type: str, time: str, region: str, date: str):
     await ctx.defer()
     cd = check_date(date)
     td = date.split('-')
@@ -985,9 +989,10 @@ def download_mp3(url):
     return audio.title
 
 #Download youtube video
-@bot.slash_command(description='Convert youtube to mp3')
+@bot.slash_command(description='Convert youtube to mp3', integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install})
 @commands.cooldown(1, 15, commands.BucketType.user)
-async def youtubetomp3(ctx, url: discord.Option(str, required= True)):
+@option("url", str, required= True)
+async def youtubetomp3(ctx, url):
     video_check = check_vid_length(url)
     if video_check == None:
         await ctx.respond('Not a valid youtube url')
@@ -1023,13 +1028,11 @@ def check_years(year_str):
 
 
 #Image Manipulation
-@bot.slash_command(description='Edit images')
+@bot.slash_command(description='Edit images', integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install})
 @commands.cooldown(1, 5, commands.BucketType.user)
-async def edit_image(
-    ctx,
-    action: discord.Option(str, 'Choose edit action', choices=['flip horizontal', 'flip vertical'], required=True),
-    image_link: discord.Option(str, 'Enter an image URL', required=False, default=''),
-):
+@option("action", str, description='Choose edit action', choices=['flip horizontal', 'flip vertical'], required=True)
+@option("image_link", str, description='Enter an image URL', required=False, default='')
+async def edit_image(ctx, action, image_link):
     try:
         os.remove('unknown.jpg')
     except:
@@ -1059,15 +1062,13 @@ async def edit_image(
     await ctx.respond(file=discord.File("unknown.jpg"))
 
 # Allow user to generate map from city that shows all tropical cyclones that have went near the location
-@bot.slash_command(description='Generate map of all tropical cyclones from a given location')
+@bot.slash_command(description='Generate map of all tropical cyclones from a given location', integration_types={discord.IntegrationType.guild_install, discord.IntegrationType.user_install})
 @commands.cooldown(1, 15, commands.BucketType.user)
-async def cyclonehistory(
-    ctx, 
-    location: discord.Option(str,'Provide: City, STATE(2 letters) or: City, Country', required=True),
-    radius: discord.Option(int, 'Radius, in km, around point to draw storm tracks', choices=[50, 100, 150], required=True),
-    dots_or_lines: discord.Option(str, 'Map will have dots or lines for tracks', choices=['dots', 'lines'], required=True),
-    year_range: discord.Option(str, 'Year range, must be YYYY-YYYY: 1851-2023, oldest year has to be >= 1851', default=None)
-):
+@option("location", str, description='Provide: City, STATE(2 letters) or: City, Country', required=True)
+@option("radius", int, description='Radius, in km, around point to draw storm tracks', choices=[50, 100, 150], required=True)
+@option("dots_or_lines", str, description='Map will have dots or lines for tracks', choices=['dots', 'lines'], required=True)
+@option("year_range", str, description='Year range, must be YYYY-YYYY: 1851-2023, oldest year has to be >= 1851', default=None)
+async def cyclonehistory(ctx, location, radius, dots_or_lines, year_range):
     proj = ccrs.PlateCarree()
     fig = plt.figure(figsize=(11,8))
     ax = plt.axes(projection=proj) 
