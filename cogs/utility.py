@@ -1,8 +1,11 @@
 import discord
 from discord.ext import commands
+from discord.commands import Option
+
 from resources.exceptions import NotAdmin
 
 from monkamind import MonkaMind
+from bot_config.config import execute_query
 
 class Utility(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -22,7 +25,39 @@ class Utility(commands.Cog):
         if isinstance(error, NotAdmin):
             await ctx.respond('You are not authorized to use this command', ephemeral=True)
         else:
-            raise error
+            print(error)
+            await ctx.respond(error, ephemeral=True)
+        
+
+    @commands.slash_command(description="Manage bot administrators")
+    @commands.is_owner()
+    async def manageadmins(self, ctx: discord.ApplicationContext, user_id: str, action = Option(str, choices=['add', 'remove'], required=True)) -> None:
+        """
+        Bot owner only slash command to allow the owner of the bot to add or remove users based on a provided user ID to the administrators group table in the config database
+
+        Parameters:
+            self (commands.Bot): The bot user
+            ctx (discord.ApplicationContext): Context in which the command was invoked
+            user_id (str): User ID of the user whose group is being modified
+            action (discord.Option): A required option to choose either add or remove
+        """
+        username = await self.bot.fetch_user(user_id)
+        if action == 'add':
+            execute_query(
+                config_connection=self.bot.config_db,
+                query='INSERT INTO ADMINS (USER_ID) VALUES (?)',
+                params=(user_id,),
+                fetch_all=False
+            )
+            await ctx.respond(f'Successfully added {username} to the administrators group')
+        elif action == 'remove':
+            execute_query(
+                config_connection=self.bot.config_db,
+                query='DELETE FROM ADMINS WHERE USER_ID = ?',
+                params=(user_id,),
+                fetch_all=False
+            )
+            await ctx.respond(f'Successfully removed {username} to the administrators group', ephemeral=True)
 
     # Pin selected messaage to pins channel (pins channel is defined in the config.db as CONFIG_KEY = PIN_CHANNEL_ID)
     @commands.message_command(name="Pin Message")

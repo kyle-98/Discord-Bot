@@ -6,6 +6,10 @@ from wand.image import Image as WandImage
 import discord
 from discord.ext import commands
 from discord.commands import Option
+from geopy.geocoders import Nominatim
+from datetime import datetime
+from PIL import Image as im
+import re
 
 from bot_config.config import execute_query
 from resources.exceptions import NotAdmin
@@ -118,3 +122,55 @@ def is_admin():
         else:
             return True
     return commands.check(predicate)
+
+
+
+def get_latlong(loc: str, username: str) -> tuple:
+    """
+    Convert a US city name to a latitude and longitude
+
+    Parameters:
+        loc (str): A string of a US city name
+        username (str): Username of the user agent for geo-py services
+
+    Returns:
+        tuple: A tuple of the latitude and longitude
+    """
+    geolocator = Nominatim(user_agent=username)
+    location = geolocator.geocode(loc)
+    return (location.latitude, location.longitude)
+
+def check_years(year_str: str) -> bool:
+    """
+    Check if the string format "YYYY-YYYY" has a valid year range
+
+    Parameters:
+        year_str (str): The string being validated
+
+    Returns:
+        bool: If the string is a year range or not
+    """
+    pattern = r'^\d{4}-\d{4}$'
+    if re.match(pattern, year_str):
+        years = year_str.split('-')
+        try:
+            year1 = int(years[0])
+            year2 = int(years[1])
+            datetime(year1, 1, 1)
+            datetime(year2, 1, 1)
+            if int(year1) < int(year2) and int(year1) >= 1851 and int(year2) <= datetime.now().year:
+                return True
+            else:
+                return False
+        except ValueError:
+            return False
+    else:
+        return False
+    
+
+def check_date(date):
+    try:
+        datetime.strptime(date, '%Y-%m-%d')
+        return True
+    except ValueError:
+        return False

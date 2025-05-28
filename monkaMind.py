@@ -48,6 +48,7 @@ class MonkaMind(commands.Bot):
         self.token: str = None
         self.version: str = '2.0.0'
         self.pin_channel_id: int = 0
+        self.geopy_username: str = None
 
     async def setup_hook(self):
         self.config_db = open_config_db_connection('./bot_config/config.db')
@@ -77,6 +78,19 @@ class MonkaMind(commands.Bot):
 
         if result and result['CONFIG_VALUE']:
             self.pin_channel_id = result['CONFIG_VALUE'] 
+        else:
+           raise Exception('Failed to fetch pinned messages channel ID from config database') 
+        
+        # Get the geo-py username from the config database
+        result = execute_query(
+            config_connection=self.config_db,
+            query='SELECT CONFIG_VALUE FROM CONFIG WHERE CONFIG_KEY = ?',
+            params=('GEOPY_USERNAME',),
+            fetch_one=True
+        )
+
+        if result and result['CONFIG_VALUE']:
+            self.geopy_username = result['CONFIG_VALUE'] 
         else:
            raise Exception('Failed to fetch pinned messages channel ID from config database') 
 
