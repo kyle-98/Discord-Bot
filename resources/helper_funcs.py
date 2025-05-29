@@ -138,7 +138,7 @@ def get_latlong(loc: str, username: str) -> tuple:
     """
     geolocator = Nominatim(user_agent=username)
     location = geolocator.geocode(loc)
-    return (location.latitude, location.longitude)
+    return (location.latitude, location.longitude) if location else None
 
 def check_years(year_str: str) -> bool:
     """

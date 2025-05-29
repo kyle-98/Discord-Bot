@@ -49,6 +49,7 @@ class MonkaMind(commands.Bot):
         self.version: str = '2.0.0'
         self.pin_channel_id: int = 0
         self.geopy_username: str = None
+        self.nasa_api_key: str = None
 
     async def setup_hook(self):
         self.config_db = open_config_db_connection('./bot_config/config.db')
@@ -92,7 +93,20 @@ class MonkaMind(commands.Bot):
         if result and result['CONFIG_VALUE']:
             self.geopy_username = result['CONFIG_VALUE'] 
         else:
-           raise Exception('Failed to fetch pinned messages channel ID from config database') 
+           raise Exception('Failed to fetch geo-py username from config')
+
+        # Get the nasa api key from the config database
+        result = execute_query(
+            config_connection=self.config_db,
+            query='SELECT CONFIG_VALUE FROM CONFIG WHERE CONFIG_KEY = ?',
+            params=('NASA_API_KEY',),
+            fetch_one=True
+        )
+
+        if result and result['CONFIG_VALUE']:
+            self.nasa_api_key = result['CONFIG_VALUE'] 
+        else:
+           raise Exception('Failed to fetch nasa api key from config')  
 
         for cog in get_cog_modules():
             self.load_extension(cog)
