@@ -255,7 +255,7 @@ class TropicalStormDropDown(discord.ui.Select):
             interaction (discord.Interaction): The interaction event the user triggered
         """
         await interaction.response.defer()
-        await interaction.followup.send("Generating... <a:spin:1149889506628096161>")
+        status_msg = await interaction.followup.send("Generating... <a:spin:1149889506628096161>")
 
         name, storm_id = self.values[0].split(' | ')
         storm = realtime.Realtime().get_storm(storm_id)
@@ -274,11 +274,10 @@ class TropicalStormDropDown(discord.ui.Select):
 
         storm_type = storm.get_forecast_realtime()['type'][0]
         storm_type = 'Tropical Storm' if storm_type == 'TS' else 'Hurricane' if storm_type == 'HU' else storm_type
-
         embed = discord.Embed(title=f"NHC Track for {storm_type} {storm.name}")
         file = discord.File(fp=buffer, filename='track.png')
         embed.set_image(url='attachment://track.png')
-        await interaction.edit_original_message(content="", attachments=[file], embed=embed)
+        await status_msg.edit(content="", file=file, embed=embed)
 
     def plot_boundaries(self, ax: plt.axes) -> None:
         """
@@ -395,6 +394,7 @@ class Weather(commands.Cog):
             self (commands.Bot): The bot user
             ctx (discord.ApplicationContext): The context in which the command was invoked
         """
+        await ctx.defer()
         options = self.generate_options()
 
         if not options:
