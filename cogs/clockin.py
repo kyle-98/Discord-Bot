@@ -117,6 +117,16 @@ class ClockIn(commands.Cog):
     @commands.slash_command(description='Set a users times clocked in')
     @is_admin()
     async def setclockin(self, ctx: discord.ApplicationContext, user_id: str, times: int) -> None:
+        """
+        Slash command to allow a bot administrator to set the number of times a specific user has clocked in. This command will update the specified user's number o 
+        clock in times in the config database.
+
+        Parameters:
+            self (commands.Bot): The bot user
+            ctx (discord.ApplicationContext): The context in which the command was invoked,
+            user_id (str): The discord user id of whose clock in values will be edited
+            times (int): The value in which the specified user's clock in times will be set to
+        """
         await ctx.defer()
         execute_query(
             config_connection=self.bot.config_db,

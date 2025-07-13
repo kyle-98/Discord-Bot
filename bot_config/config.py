@@ -11,7 +11,7 @@ def open_config_db_connection(file_path: str) -> sqlite3.Connection | None:
         file_path (str): Filepath to the config database file
 
     Returns:
-        Optional sqlite3.Connection: An active sqlite connection to the specified database if it exists, otherwise None
+        sqlite3.Connection | None: An active sqlite connection to the specified database if it exists, otherwise None
     """
     try:
         if(os.path.exists(file_path)):

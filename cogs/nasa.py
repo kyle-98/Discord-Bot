@@ -1,15 +1,24 @@
 import discord
 import requests
 from discord.ext import commands
-from discord.commands import Option
-from geopy.geocoders import Nominatim
-from io import BytesIO
-
 from monkamind import MonkaMind
 from resources.helper_funcs import get_latlong
 
 
-def get_nasa_image_url(lat: str, lon: str, api_key: str, dim: int = 0.15):
+def get_nasa_image_url(lat: str, lon: str, api_key: str, dim: int = 0.15) -> str | None:
+    """
+    Fetch the latest satellite image of a specified latitude and longitude from the plantary earth imagery API endpoint.
+
+    Parameters:
+        lat (str): The latitude of the specified location
+        lon (str): The longitude of the specified location
+        api_key (str): The bot user's NASA API key
+        dim (int): The radius in which the fetched image will show of the ground area
+
+    Returns:
+        str | None: If the NASA API gives a response and an image back from the latest satellite picture of the provided lat/lon,
+        the function will return the URL to this image. Otherwise, the function will return None
+    """
     url = 'https://api.nasa.gov/planetary/earth/imagery'
     params = {
         'lat': lat,
@@ -37,6 +46,14 @@ class NASA(commands.Cog):
         }
     )
     async def nsa(self, ctx: discord.ApplicationContext, location = discord.Option(str, 'Enter a city or address', required=True)):
+        """
+        Slash command to allow a user to provide a city name or address and have a picture of the most recent satellite footage of those coordinates posted in the chat
+
+        Parameters:
+            self (commands.Bot): The bot user
+            ctx (discord.ApplicationContext): The context in which the command was invoked
+            location (discord.Option): A required string that is a city name or a specific address
+        """
         await ctx.defer()
         coords = get_latlong(location, self.bot.geopy_username)
         if not coords:
