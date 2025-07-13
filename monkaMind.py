@@ -1,32 +1,8 @@
-import json
-import random
-import os
-import re
 import discord
 import asyncio
-import requests
-import subprocess
-import wand
-import wand.image
 import sqlite3
 
-from typing import Optional
-from datetime import datetime
-from tropycal import utils, realtime, tracks
-import cartopy.crs as ccrs
-import cartopy.feature as cfeature
-import matplotlib.pyplot as plt
-from geopy.geocoders import Nominatim
-from io import BytesIO
-from PIL import Image as im
-from pytube import YouTube as YT
 from discord.ext import commands
-from discord.ui import Button, View
-from discord import Embed
-from discord.commands import Option
-from discord.ext.pages import Paginator, Page
-# from paginator import Paginator, Page
-from wand.image import Image
 
 # Local imports
 from cogs import get_cog_modules
