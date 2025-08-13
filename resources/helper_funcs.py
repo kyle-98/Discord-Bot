@@ -1,14 +1,12 @@
 import random
 import requests
-from typing import Optional, Callable
+from typing import Callable
 from io import BytesIO
 from wand.image import Image as WandImage
 import discord
 from discord.ext import commands
-from discord.commands import Option
 from geopy.geocoders import Nominatim
 from datetime import datetime
-from PIL import Image as im
 import re
 
 from bot_config.config import execute_query
@@ -79,7 +77,7 @@ async def find_recent_image_url(ctx: discord.ApplicationContext, lookback: int =
         lookback (int): number of messages to look back, default is 25
 
     Returns:
-        Optional str: If an image was found within the lookback message limit, the url of the image is returned
+        str | None: If an image was found within the lookback message limit, the url of the image is returned
     """
     async for message in ctx.channel.history(limit=lookback):
         for attachment in message.attachments:
